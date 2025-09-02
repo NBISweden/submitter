@@ -1,30 +1,53 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"net/http"
 
-	"github.com/NBISweden/submitter/cmd/ingest"
+	"github.com/NBISweden/submitter/helpers"
+	"github.com/NBISweden/submitter/internal/accession"
 	"github.com/NBISweden/submitter/internal/cli"
+	"github.com/NBISweden/submitter/internal/ingest"
+	"github.com/NBISweden/submitter/pkg/sdaclient"
 )
 
 func main() {
-	inputs, err := cli.ParseArgs()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	var inputs *cli.Inputs
+	var token string
+	var sdaClient *sdaclient.Client
 
-	inputs.Validation()
-	token, err := inputs.GetAccessToken()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	helpers.RunStep("Parsing arguments", func() error {
+		var err error
+		inputs, err = cli.ParseArgs()
+		if err != nil {
+			return err
+		}
+		inputs.Validation()
+		return nil
+	})
+	helpers.ConfirmInputs(inputs.UserID, inputs.DatasetFolder, inputs.Command, inputs.DryRun)
 
-	err = ingest.IngestFiles(token, inputs.APIHost, inputs.UserID, inputs.DatasetFolder, inputs.DryRun)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	helpers.RunStep("Getting Access Token", func() error {
+		var err error
+		token, err = inputs.GetAccessToken()
+		return err
+	})
+
+	helpers.RunStep("Creating SDA Client", func() error {
+		sdaClient = &sdaclient.Client{
+			AccessToken:   token,
+			APIHost:       inputs.APIHost,
+			UserID:        inputs.UserID,
+			DatasetFolder: inputs.DatasetFolder,
+			HTTPClient:    http.DefaultClient,
+		}
+		return nil
+	})
+
+	helpers.RunStep("Ingesting Files", func() error {
+		return ingest.IngestFiles(sdaClient, inputs.DryRun)
+	})
+
+	helpers.RunStep("Creating Accession IDs", func() error {
+		return accession.CreateAccessionIDs(sdaClient, "fileIDs.txt", inputs.DryRun)
+	})
 }

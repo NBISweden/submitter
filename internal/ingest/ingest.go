@@ -1,12 +1,12 @@
 package ingest
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"strings"
+
+	"github.com/NBISweden/submitter/pkg/sdaclient"
 )
 
 type File struct {
@@ -14,17 +14,9 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func IngestFiles(accessToken, apiHost, user, datasetFolder string, dryRun bool) error {
-	url := fmt.Sprintf("%s/users/%s/files", apiHost, user)
-	fmt.Println("Calling:", url)
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Authorization", "Bearer "+accessToken)
+func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) error {
 
-	client := &http.Client{}
-	response, err := client.Do(request)
+	response, err := sdaclient.GetFiles()
 	if err != nil {
 		return err
 	}
@@ -45,7 +37,7 @@ func IngestFiles(accessToken, apiHost, user, datasetFolder string, dryRun bool) 
 		if f.FileStatus != "uploaded" {
 			continue
 		}
-		if !strings.Contains(f.InboxPath, datasetFolder) {
+		if !strings.Contains(f.InboxPath, sdaclient.DatasetFolder) {
 			continue
 		}
 		if strings.Contains(f.InboxPath, "PRIVATE") || strings.Contains(f.InboxPath, "LANDING PAGE") {
@@ -55,7 +47,7 @@ func IngestFiles(accessToken, apiHost, user, datasetFolder string, dryRun bool) 
 	}
 
 	filesCount := len(fileList)
-	fmt.Printf("Number of files to ingest: %d\n", filesCount)
+	fmt.Printf("\nNumber of files to ingest: %d\n", filesCount)
 	if dryRun {
 		fmt.Println("Dry run, not ingesting files")
 		return nil
@@ -64,24 +56,15 @@ func IngestFiles(accessToken, apiHost, user, datasetFolder string, dryRun bool) 
 	for _, path := range fileList {
 		payload := map[string]string{
 			"filepath": path,
-			"user":     user,
+			"user":     sdaclient.UserID,
 		}
 		data, _ := json.Marshal(payload)
 
-		url := apiHost + "/file/ingest"
-		fmt.Println("Calling:", url)
-		request, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+		response, err = sdaclient.PostFileIngest(data)
 		if err != nil {
 			return err
 		}
 
-		request.Header.Set("Authorization", "Bearer "+accessToken)
-		request.Header.Set("Content-Type", "application/json")
-
-		response, err := client.Do(request)
-		if err != nil {
-			return err
-		}
 		io.Copy(io.Discard, response.Body)
 		response.Body.Close()
 	}
