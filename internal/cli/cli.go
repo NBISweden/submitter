@@ -7,9 +7,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/NBISweden/submitter/helpers"
+	// "github.com/NBISweden/submitter/helpers"
 )
 
 type Inputs struct {
+	Command       string
 	DryRun        bool
 	APIHost       string
 	S3CmdConfig   string
@@ -30,6 +34,16 @@ func ParseArgs() (*Inputs, error) {
 	flag.StringVar(&inputs.DatasetFolder, "dataset-folder", "", "The folder in s3inbox where the uploaded files reside (requiered)")
 
 	flag.Parse()
+
+	args := flag.Args()
+	cmd := args[0]
+	err := helpers.IsCommandAllowed(cmd)
+	if err != nil {
+		return inputs, err
+	}
+
+	inputs.Command = cmd
+
 	var missingArgs []string
 
 	if inputs.UserID == "" {
