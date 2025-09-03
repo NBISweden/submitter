@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/NBISweden/submitter/helpers"
@@ -43,11 +44,24 @@ func main() {
 		return nil
 	})
 
-	helpers.RunStep("Ingesting Files", func() error {
-		return ingest.IngestFiles(sdaClient, inputs.DryRun)
-	})
+	if inputs.Command == helpers.Ingest {
+		helpers.RunStep("Ingesting Files", func() error {
+			return ingest.IngestFiles(sdaClient, inputs.DryRun)
+		})
+	}
 
-	helpers.RunStep("Creating Accession IDs", func() error {
-		return accession.CreateAccessionIDs(sdaClient, "fileIDs.txt", inputs.DryRun)
-	})
+
+	if inputs.Command == helpers.Accession{
+		helpers.RunStep("Creating Accession IDs", func() error {
+			return accession.CreateAccessionIDs(sdaClient, "fileIDs.txt", inputs.DryRun)
+		})
+	}
+
+	if inputs.Command == helpers.Dataset {
+		helpers.RunStep("Creating Dataset", func() error {
+			fmt.Println("Dataset created")
+			return nil
+		})
+	}
+
 }
