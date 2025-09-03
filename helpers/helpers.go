@@ -10,21 +10,64 @@ import (
 	"github.com/briandowns/spinner"
 )
 
-var AllowedCommands = []string{"ingest", "accession", "dataset"}
+type Command int
 
+const (
+	Unknown Command = iota
+	Ingest
+	Accession
+	Dataset
+)
 
-func IsCommandAllowed(cmd string) error{
-	// Construct a set of the list of allowed commands for lookup
-	allowedSet := make(map[string]struct{}, len(AllowedCommands))
-	for _, v := range AllowedCommands {
-		allowedSet[v] = struct{}{}
+func (c Command) String() string {
+	switch c {
+	case Ingest:
+		return "ingest"
+	case Accession:
+		return "accession"
+	case Dataset:
+		return "dataset"
+	default:
+		return "unknown"
 	}
-	if _, ok := allowedSet[cmd]; !ok {
-		return fmt.Errorf("Command '%s' not allowed, expecting one of [%s]", cmd, strings.Join(AllowedCommands, ", "))
-	}
-	return nil
-
 }
+
+var commandMap = map[string]Command{
+	"ingest": Ingest,
+	"accession": Accession,
+	"dataset": Dataset,
+	"unknown": Unknown,
+}
+
+func ParseCommand(s string) Command {
+	if cmd, ok := commandMap[s]; ok{
+		return cmd
+	}
+	return Unknown
+}
+
+func ValidCommands() []string {
+	cmds := make([]string, 0, len(commandMap))
+	for k := range commandMap {
+		cmds = append(cmds, k)
+	}
+	return  cmds
+}
+
+// var AllowedCommands = []string{"ingest", "accession", "dataset"}
+//
+//
+// func IsCommandAllowed(cmd string) error{
+// 	// Construct a set of the list of allowed commands for lookup
+// 	allowedSet := make(map[string]struct{}, len(AllowedCommands))
+// 	for _, v := range AllowedCommands {
+// 		allowedSet[v] = struct{}{}
+// 	}
+// 	if _, ok := allowedSet[cmd]; !ok {
+// 		return fmt.Errorf("Command '%s' not allowed, expecting one of [%s]", cmd, strings.Join(AllowedCommands, ", "))
+// 	}
+// 	return nil
+// }
 
 func RunStep(description string, fn func() error) {
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
@@ -42,7 +85,7 @@ func RunStep(description string, fn func() error) {
 	fmt.Printf("✅ %s COMPLETE\n", description)
 }
 
-func ConfirmInputs(userID string, datasetFolder string, command string, dryRun bool) {
+func ConfirmInputs(userID string, datasetFolder string, command Command, dryRun bool) {
 	fmt.Println("\n====== Summary ======")
 	fmt.Printf("User ID        : %s\n", userID)
 	fmt.Printf("Dataset Folder : %s\n", datasetFolder)

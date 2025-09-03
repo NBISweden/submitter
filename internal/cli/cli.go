@@ -9,11 +9,10 @@ import (
 	"strings"
 
 	"github.com/NBISweden/submitter/helpers"
-	// "github.com/NBISweden/submitter/helpers"
 )
 
 type Inputs struct {
-	Command       string
+	Command       helpers.Command
 	DryRun        bool
 	APIHost       string
 	S3CmdConfig   string
@@ -37,12 +36,10 @@ func ParseArgs() (*Inputs, error) {
 
 	args := flag.Args()
 	cmd := args[0]
-	err := helpers.IsCommandAllowed(cmd)
-	if err != nil {
-		return inputs, err
+	inputs.Command = helpers.ParseCommand(cmd)
+	if inputs.Command == helpers.Unknown {
+		return inputs, fmt.Errorf("Command '%s' not valid, expecing one of [%s]\n", cmd, strings.Join(helpers.ValidCommands(), ", "))
 	}
-
-	inputs.Command = cmd
 
 	var missingArgs []string
 
