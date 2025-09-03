@@ -2,9 +2,9 @@ package helpers
 
 import (
 	"bufio"
-	"strings"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -33,14 +33,14 @@ func (c Command) String() string {
 }
 
 var commandMap = map[string]Command{
-	"ingest": Ingest,
+	"ingest":    Ingest,
 	"accession": Accession,
-	"dataset": Dataset,
-	"unknown": Unknown,
+	"dataset":   Dataset,
+	"unknown":   Unknown,
 }
 
 func ParseCommand(s string) Command {
-	if cmd, ok := commandMap[s]; ok{
+	if cmd, ok := commandMap[s]; ok {
 		return cmd
 	}
 	return Unknown
@@ -51,23 +51,8 @@ func ValidCommands() []string {
 	for k := range commandMap {
 		cmds = append(cmds, k)
 	}
-	return  cmds
+	return cmds
 }
-
-// var AllowedCommands = []string{"ingest", "accession", "dataset"}
-//
-//
-// func IsCommandAllowed(cmd string) error{
-// 	// Construct a set of the list of allowed commands for lookup
-// 	allowedSet := make(map[string]struct{}, len(AllowedCommands))
-// 	for _, v := range AllowedCommands {
-// 		allowedSet[v] = struct{}{}
-// 	}
-// 	if _, ok := allowedSet[cmd]; !ok {
-// 		return fmt.Errorf("Command '%s' not allowed, expecting one of [%s]", cmd, strings.Join(AllowedCommands, ", "))
-// 	}
-// 	return nil
-// }
 
 func RunStep(description string, fn func() error) {
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
