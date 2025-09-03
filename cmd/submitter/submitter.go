@@ -50,8 +50,7 @@ func main() {
 		})
 	}
 
-
-	if inputs.Command == helpers.Accession{
+	if inputs.Command == helpers.Accession {
 		helpers.RunStep("Creating Accession IDs", func() error {
 			return accession.CreateAccessionIDs(sdaClient, "fileIDs.txt", inputs.DryRun)
 		})

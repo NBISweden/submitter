@@ -7,7 +7,7 @@ import (
 )
 
 func TestGet_Files(t *testing.T) {
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/users/testuser/files" && r.Method == http.MethodGet {
 			w.WriteHeader(http.StatusOK)
 			return
@@ -17,13 +17,12 @@ func TestGet_Files(t *testing.T) {
 	defer mockServer.Close()
 
 	mockClient := Client{
-		AccessToken: "test-token",
-		APIHost: mockServer.URL,
-		UserID: "testuser",
+		AccessToken:   "test-token",
+		APIHost:       mockServer.URL,
+		UserID:        "testuser",
 		DatasetFolder: "test-folder",
-		HTTPClient: http.DefaultClient,
+		HTTPClient:    http.DefaultClient,
 	}
-
 
 	response, err := mockClient.GetFiles()
 	if err != nil {
