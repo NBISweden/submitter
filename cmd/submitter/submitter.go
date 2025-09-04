@@ -8,6 +8,7 @@ import (
 	"github.com/NBISweden/submitter/internal/accession"
 	"github.com/NBISweden/submitter/internal/cli"
 	"github.com/NBISweden/submitter/internal/ingest"
+	"github.com/NBISweden/submitter/internal/mail"
 	"github.com/NBISweden/submitter/pkg/sdaclient"
 )
 
@@ -65,7 +66,25 @@ func main() {
 
 	if inputs.Command == helpers.Mail {
 		helpers.RunStep("Sending email notification", func() error {
-			return nil
+			// TODO: Read this input from a config file
+			m := mail.Configure("tickets.nbis.se", 587, "erik.zeidlitz@nbis.se", "invalidpassword", "erik.zeidlitz@nbis.se", "John Doe", "DATASET-ABC", "aa-Dataset-efg")
+
+			err := m.Notify("BigPicture")
+			if err != nil {
+				return err
+			}
+
+			err = m.Notify("Jarno")
+			if err != nil {
+				return err
+			}
+
+			err = m.Notify("Submitter")
+			if err != nil {
+				return err
+			}
+
+			return err
 		})
 	}
 
