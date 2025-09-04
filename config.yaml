@@ -1,0 +1,9 @@
+ApiHost: ""
+s3cmdConfig: ""
+UserId: ""
+DatasetId: ""
+DatasetFolder: ""
+FreeSpaceUser: ""
+FreeSpacePass: ""
+SMTPHost: "tickets.nbis.se"
+SMTPPort: 587
