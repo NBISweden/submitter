@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <p>Dear {{.Uploader}},</p>
+
+    <p>
+    We are pleased to inform you that the ingestion of your dataset submitted in the folder <strong>{{.DatasetFolder}}</strong> has been successfully completed.
+    </p>
+
+    <p>
+    The dataset ID is: <strong>{{.DatasetID}}</strong>
+    </p>
+
+    <p>
+    Attached, you will find a file containing a list of file stable IDs along with their corresponding uploaded file paths.
+    </p>
+
+    <p>
+    Please note that we are currently in the process of creating a REMS entry for it.
+    </p>
+
+    <p>
+      Feel free to reach out if you have any questions.
+    </p>
+
+    <p>
+      Best regards,<br>
+      <em>BP-Ops Team</em>
+    </p>
+  </body>
+</html>
+
