@@ -17,6 +17,7 @@ const (
 	Ingest
 	Accession
 	Dataset
+	Mail
 )
 
 func (c Command) String() string {
@@ -27,6 +28,8 @@ func (c Command) String() string {
 		return "accession"
 	case Dataset:
 		return "dataset"
+	case Mail:
+		return "Mail"
 	default:
 		return "unknown"
 	}
@@ -36,6 +39,7 @@ var commandMap = map[string]Command{
 	"ingest":    Ingest,
 	"accession": Accession,
 	"dataset":   Dataset,
+	"mail":      Mail,
 	"unknown":   Unknown,
 }
 

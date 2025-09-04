@@ -63,4 +63,10 @@ func main() {
 		})
 	}
 
+	if inputs.Command == helpers.Mail {
+		helpers.RunStep("Sending email notification", func() error {
+			return nil
+		})
+	}
+
 }
