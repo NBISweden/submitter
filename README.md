@@ -38,11 +38,8 @@ Running ingestion with specific input arguments:
 
 ## testing
 
-Some unit tests for certain packages are in place using the standard lib *testing* and can be expected to be used accordingly
+Unit tests using [pkg.go.dev/testing](https://pkg.go.dev/testing) 
 
-[reference](pkg.go.dev/testing) 
-
-running all tests using a recursive search through the project:
-
+Running all tests:
 ```bash
 go test ./...
