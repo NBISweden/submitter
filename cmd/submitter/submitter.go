@@ -7,6 +7,7 @@ import (
 	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/accession"
 	"github.com/NBISweden/submitter/internal/cli"
+	"github.com/NBISweden/submitter/internal/config"
 	"github.com/NBISweden/submitter/internal/ingest"
 	"github.com/NBISweden/submitter/internal/mail"
 	"github.com/NBISweden/submitter/pkg/sdaclient"
@@ -16,20 +17,26 @@ func main() {
 	var inputs *cli.Inputs
 	var token string
 	var sdaClient *sdaclient.Client
+	var c *config.Config
+	var err error
 
 	helpers.RunStep("Parsing arguments", func() error {
-		var err error
 		inputs, err = cli.ParseArgs()
 		if err != nil {
 			return err
 		}
-		inputs.Validation()
 		return nil
 	})
-	helpers.ConfirmInputs(inputs.UserID, inputs.DatasetFolder, inputs.Command, inputs.DryRun)
+
+	helpers.RunStep("Reading Config", func() error {
+		c, err = config.NewConfig(inputs.ConfigFile)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 
 	helpers.RunStep("Getting Access Token", func() error {
-		var err error
 		token, err = inputs.GetAccessToken()
 		return err
 	})
@@ -37,9 +44,9 @@ func main() {
 	helpers.RunStep("Creating SDA Client", func() error {
 		sdaClient = &sdaclient.Client{
 			AccessToken:   token,
-			APIHost:       inputs.APIHost,
-			UserID:        inputs.UserID,
-			DatasetFolder: inputs.DatasetFolder,
+			APIHost:       c.APIHost,
+			UserID:        c.UserID,
+			DatasetFolder: c.DatasetFolder,
 			HTTPClient:    http.DefaultClient,
 		}
 		return nil
@@ -66,8 +73,7 @@ func main() {
 
 	if inputs.Command == helpers.Mail {
 		helpers.RunStep("Sending email notification", func() error {
-			// TODO: Read this input from a config file
-			m := mail.Configure("tickets.nbis.se", 587, "erik.zeidlitz@nbis.se", "invalidpassword", "erik.zeidlitz@nbis.se", "John Doe", "DATASET-ABC", "aa-Dataset-efg")
+			m := mail.Configure(c)
 
 			err := m.Notify("BigPicture")
 			if err != nil {
