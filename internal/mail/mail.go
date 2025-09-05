@@ -5,44 +5,45 @@ import (
 	"fmt"
 	"html/template"
 
+	"github.com/NBISweden/submitter/internal/config"
 	"gopkg.in/gomail.v2"
 )
 
 type Mail struct {
 	SMTPHost string
 	SMTPport int
-	Username string
+	Email    string
 	Password string
 	From     string
-	Data TemplateData
-	Lookup map[string]Notifiers
+	Data     TemplateData
+	Lookup   map[string]Notifiers
 }
 
 type TemplateData struct {
-	Uploader string
-	DatasetID string
+	Uploader      string
+	DatasetID     string
 	DatasetFolder string
 }
 
 type Notifiers struct {
-	Template string
-	Subject string
+	Template    string
+	Subject     string
 	Attachments []string
 }
 
-func Configure(host string, port int, username, password, from string, uploader string, datasetID string, datasetFolder string) *Mail {
+func Configure(c *config.Config) *Mail {
 	m := &Mail{
-		SMTPHost: host,
-		SMTPport: port,
-		Username: username,
-		Password: password,
-		From: from,
+		SMTPHost: c.SMTPHost,
+		SMTPport: c.SMTPPort,
+		Email:    c.Email,
+		Password: c.Password,
+		From:     c.Email,
 		Data: TemplateData{
-			Uploader: uploader,
-			DatasetID: datasetID,
-			DatasetFolder: datasetFolder,
+			Uploader:      c.Uploader,
+			DatasetID:     c.DatasetID,
+			DatasetFolder: c.DatasetFolder,
 		},
-				Lookup: map[string]Notifiers{
+		Lookup: map[string]Notifiers{
 			"Submitter": {
 				Template:    "internal/mail/templates/notify-submitter.html",
 				Subject:     "Successful Ingestion of Your Dataset Submission",
@@ -50,12 +51,12 @@ func Configure(host string, port int, username, password, from string, uploader 
 			},
 			"BigPicture": {
 				Template:    "internal/mail/templates/notify-bigpicture.html",
-				Subject:     fmt.Sprintf("Dataset %s has been ingested", datasetFolder),
+				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
 				Attachments: []string{"data/dataset.txt", "data/policy.txt"},
 			},
 			"Jarno": {
 				Template:    "internal/mail/templates/notify-jarno.html",
-				Subject:     fmt.Sprintf("Dataset %s has been ingested", datasetFolder),
+				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
 				Attachments: []string{"data/dataset.txt", "data/rems.txt", "data/policy.txt"},
 			},
 		},
@@ -74,7 +75,7 @@ func (mail *Mail) send(subject string, message string, reciever string, attachem
 		m.Attach(file)
 	}
 
-	d := gomail.NewDialer(mail.SMTPHost, mail.SMTPport, mail.Username, mail.Password)
+	d := gomail.NewDialer(mail.SMTPHost, mail.SMTPport, mail.Email, mail.Password)
 	return d.DialAndSend(m)
 }
 
@@ -84,8 +85,7 @@ func (mail *Mail) Notify(notifier string) error {
 		return fmt.Errorf("Failed to render mail template: %v", err)
 	}
 
-	// Using my own email <erik.zeidlitz@nbis.se> while testing, will remove later
-	err = mail.send(mail.Lookup[notifier].Subject, htmlBody, "erik.zeidlitz@nbis.se", mail.Lookup[notifier].Attachments)
+	err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Email, mail.Lookup[notifier].Attachments)
 	if err != nil {
 		return fmt.Errorf("Failed to send notification %v", err)
 	}
