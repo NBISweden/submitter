@@ -1,9 +1,9 @@
-ApiHost: ""
-s3cmdConfig: ""
-UserId: ""
-DatasetId: ""
-DatasetFolder: ""
-FreeSpaceUser: ""
-FreeSpacePass: ""
-SMTPHost: "tickets.nbis.se"
+Uploader: John Doe
+UserID: johndoe@lifescience-ri.eu
+DatasetID: aa-Dataset-abcde-fghi
+DatasetFolder: DATASET_ABC
+Username: 
+Password: 
+APIHost: api.bp.nbis.se
+SMTPHost: tickets.nbis.se
 SMTPPort: 587

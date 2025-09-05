@@ -12,13 +12,10 @@ import (
 )
 
 type Inputs struct {
-	Command       helpers.Command
-	DryRun        bool
-	APIHost       string
-	S3CmdConfig   string
-	UserID        string
-	DatasetID     string
-	DatasetFolder string
+	Command     helpers.Command
+	DryRun      bool
+	S3CmdConfig string
+	ConfigFile  string
 }
 
 var ErrRequieredArguments = errors.New("Missing requiered input(s)")
@@ -26,12 +23,8 @@ var ErrRequieredArguments = errors.New("Missing requiered input(s)")
 func ParseArgs() (*Inputs, error) {
 	inputs := &Inputs{}
 	flag.BoolVar(&inputs.DryRun, "dry-run", true, "Used for running without executing impacting API calls, default=true")
-	flag.StringVar(&inputs.APIHost, "api-host", "https://api.bp.nbis.se", "The Big Picture API URL, default=https://api.bp.nbis.se")
-	flag.StringVar(&inputs.S3CmdConfig, "config", "s3cmd.conf", "The s3cmd config file, default=s3cmd.config")
-	flag.StringVar(&inputs.UserID, "user-id", "", "The User ID of the uploader / submitter (requiered)")
-	flag.StringVar(&inputs.DatasetID, "dataset-id", "", "The ID of the uploaded dataset (requiered)")
-	flag.StringVar(&inputs.DatasetFolder, "dataset-folder", "", "The folder in s3inbox where the uploaded files reside (requiered)")
-
+	flag.StringVar(&inputs.S3CmdConfig, "s3config", "s3cmd.conf", "The s3cmd config file, default=s3cmd.config")
+	flag.StringVar(&inputs.ConfigFile, "config", "config.yaml", "Path to configuration file, default=config.yaml")
 	flag.Parse()
 
 	args := flag.Args()
@@ -40,25 +33,6 @@ func ParseArgs() (*Inputs, error) {
 	if inputs.Command == helpers.Unknown {
 		return inputs, fmt.Errorf("Command '%s' not valid, expecing one of [%s]\n", cmd, strings.Join(helpers.ValidCommands(), ", "))
 	}
-
-	var missingArgs []string
-
-	if inputs.UserID == "" {
-		missingArgs = append(missingArgs, "user-id")
-	}
-
-	if inputs.DatasetID == "" {
-		missingArgs = append(missingArgs, "dataset-id")
-	}
-
-	if inputs.DatasetFolder == "" {
-		missingArgs = append(missingArgs, "dataset-folder")
-	}
-
-	if len(missingArgs) > 0 {
-		return inputs, fmt.Errorf("%w: %s", ErrRequieredArguments, strings.Join(missingArgs, ", "))
-	}
-
 	return inputs, nil
 }
 
@@ -90,8 +64,4 @@ func (i *Inputs) GetAccessToken() (string, error) {
 		return "", nil
 	}
 	return "", fmt.Errorf("access_token not found in %s", i.S3CmdConfig)
-}
-
-func (i *Inputs) Validation() {
-	i.UserID = strings.ReplaceAll(i.UserID, "@", "_")
 }
