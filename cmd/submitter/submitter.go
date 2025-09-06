@@ -17,7 +17,7 @@ func main() {
 	var inputs *cli.Inputs
 	var token string
 	var sdaClient *sdaclient.Client
-	var c *config.Config
+	var conf *config.Config
 	var err error
 
 	helpers.RunStep("Parsing arguments", func() error {
@@ -29,7 +29,7 @@ func main() {
 	})
 
 	helpers.RunStep("Reading Config", func() error {
-		c, err = config.NewConfig(inputs.ConfigFile)
+		conf, err = config.NewConfig(inputs.ConfigFile)
 		if err != nil {
 			return err
 		}
@@ -44,9 +44,9 @@ func main() {
 	helpers.RunStep("Creating SDA Client", func() error {
 		sdaClient = &sdaclient.Client{
 			AccessToken:   token,
-			APIHost:       c.APIHost,
-			UserID:        c.UserID,
-			DatasetFolder: c.DatasetFolder,
+			APIHost:       conf.APIHost,
+			UserID:        conf.UserID,
+			DatasetFolder: conf.DatasetFolder,
 			HTTPClient:    http.DefaultClient,
 		}
 		return nil
@@ -66,14 +66,14 @@ func main() {
 
 	if inputs.Command == helpers.Dataset {
 		helpers.RunStep("Creating Dataset", func() error {
-			fmt.Println("Dataset created")
+			fmt.Println(conf)
 			return nil
 		})
 	}
 
 	if inputs.Command == helpers.Mail {
 		helpers.RunStep("Sending email notification", func() error {
-			m := mail.Configure(c)
+			m := mail.Configure(conf)
 
 			err := m.Notify("BigPicture")
 			if err != nil {
