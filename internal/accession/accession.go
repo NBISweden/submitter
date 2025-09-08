@@ -18,7 +18,7 @@ func CreateAccessionIDs(sdaclient *sdaclient.Client, fileIDPath string, dryRun b
 		return err
 	}
 
-	response, err := sdaclient.GetFiles()
+	response, err := sdaclient.GetUsersFiles()
 	if err != nil {
 		return err
 	}

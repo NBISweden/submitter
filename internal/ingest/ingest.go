@@ -16,7 +16,7 @@ type File struct {
 
 func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) error {
 
-	response, err := sdaclient.GetFiles()
+	response, err := sdaclient.GetUsersFiles()
 	if err != nil {
 		return err
 	}
