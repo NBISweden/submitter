@@ -24,7 +24,7 @@ func TestGet_Files(t *testing.T) {
 		HTTPClient:    http.DefaultClient,
 	}
 
-	response, err := mockClient.GetFiles()
+	response, err := mockClient.GetUsersFiles()
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

@@ -14,7 +14,7 @@ type Client struct {
 	HTTPClient    *http.Client
 }
 
-func (c *Client) GetFiles() (*http.Response, error) {
+func (c *Client) GetUsersFiles() (*http.Response, error) {
 	return c.doRequest("GET", fmt.Sprintf("users/%s/files", c.UserID), nil)
 }
 
