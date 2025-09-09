@@ -16,6 +16,7 @@ const (
 	Accession
 	Dataset
 	Mail
+	All
 )
 
 func (c Command) String() string {
@@ -27,7 +28,9 @@ func (c Command) String() string {
 	case Dataset:
 		return "dataset"
 	case Mail:
-		return "Mail"
+		return "mail"
+	case All:
+		return "all"
 	default:
 		return "unknown"
 	}
@@ -38,6 +41,7 @@ var commandMap = map[string]Command{
 	"accession": Accession,
 	"dataset":   Dataset,
 	"mail":      Mail,
+	"all":			 All,
 	"unknown":   Unknown,
 }
 

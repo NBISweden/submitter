@@ -14,6 +14,16 @@ type Client struct {
 	HTTPClient    *http.Client
 }
 
+func NewClient(token string, apiHost string, userID string, datasetFolder string) *Client {
+	return &Client{
+		AccessToken: token,
+		APIHost: apiHost,
+		UserID: userID,
+		DatasetFolder: datasetFolder,
+		HTTPClient: http.DefaultClient,
+	}
+}
+
 func (c *Client) GetUsersFiles() (*http.Response, error) {
 	return c.doRequest("GET", fmt.Sprintf("users/%s/files", c.UserID), nil)
 }
@@ -24,6 +34,10 @@ func (c *Client) PostFileIngest(payload []byte) (*http.Response, error) {
 
 func (c *Client) PostFileAccession(payload []byte) (*http.Response, error) {
 	return c.doRequest("POST", "file/accession", payload)
+}
+
+func (c *Client) PostDatasetCreate(payload []byte) (*http.Response, error) {
+	return c.doRequest("POST", "dataset/create", payload)
 }
 
 func (c *Client) doRequest(method, path string, body []byte) (*http.Response, error) {
