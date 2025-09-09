@@ -47,9 +47,11 @@ func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) error {
 	}
 
 	filesCount := len(fileList)
-	fmt.Printf("\nNumber of files to ingest: %d\n", filesCount)
+	fmt.Printf("[Ingest] Number of files to ingest : %d\n", filesCount)
 	if dryRun {
-		fmt.Println("Dry run, not ingesting files")
+		fmt.Println("[Dry-Run] Files will not be ingested")
+		// Don't ask me why, but If I don't have this print the print above will not show
+		fmt.Println()
 		return nil
 	}
 

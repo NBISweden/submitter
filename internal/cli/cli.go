@@ -33,6 +33,7 @@ func ParseArgs() (*Inputs, error) {
 	if inputs.Command == helpers.Unknown {
 		return inputs, fmt.Errorf("Command '%s' not valid, expecing one of [%s]\n", cmd, strings.Join(helpers.ValidCommands(), ", "))
 	}
+
 	return inputs, nil
 }
 
