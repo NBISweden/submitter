@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"bufio"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -16,9 +17,9 @@ type Config struct {
 	Email         string `yaml:"Email"`
 	Password      string `yaml:"Password"`
 	APIHost       string `yaml:"APIHost"`
-	S3CmdConfig   string `yaml:"S3CmdConfig"`
 	SMTPHost      string `yaml:"SMTPHost"`
 	SMTPPort      int    `yaml:"SMTPPort"`
+	S3Config			string `yaml:"S3Config"`
 }
 
 func NewConfig(configFilePath string) (*Config, error) {
@@ -34,6 +35,32 @@ func NewConfig(configFilePath string) (*Config, error) {
 	return &c, nil
 }
 
-func (c *Config) GetEmailUnderscore() string {
-	return strings.ReplaceAll(c.UserID, "@", "_")
+func (c *Config) GetAccessToken() (string, error) {
+	file, err := os.Open(c.S3Config)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+		if key == "access_token" {
+			return value, nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", nil
+	}
+	return "", fmt.Errorf("access_token not found in %s", c.S3Config)
 }

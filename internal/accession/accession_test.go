@@ -11,7 +11,7 @@ func TestCreateFileIDs(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "testfile.txt")
 
-	// --- Test 1: File should be created ---
+	// File should be created
 	_, err := createFileIDFile(filePath, false)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -22,13 +22,13 @@ func TestCreateFileIDs(t *testing.T) {
 		t.Fatalf("expected file to exist at %s", filePath)
 	}
 
-	// --- Test 2: Calling again should return ErrFileAlreadyExists ---
+	// Calling again should return ErrFileAlreadyExists
 	_, err = createFileIDFile(filePath, false)
 	if err != ErrFileAlreadyExists {
 		t.Fatalf("expected ErrFileAlreadyExists, got %v", err)
 	}
 
-	// --- Test 3: Dry run should not create a file ---
+	// Dry run should not create a file
 	dryRunFile := filepath.Join(tmpDir, "dryrun.txt")
 	_, err = createFileIDFile(dryRunFile, true)
 	if err != nil {
