@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/NBISweden/submitter/helpers"
@@ -66,7 +65,6 @@ func main() {
 
 	if inputs.Command == helpers.Dataset {
 		helpers.RunStep("Creating Dataset", func() error {
-			fmt.Println(conf)
 			return nil
 		})
 	}
