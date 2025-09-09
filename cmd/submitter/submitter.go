@@ -1,12 +1,13 @@
 package main
 
 import (
-	"net/http"
+	"fmt"
 
 	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/accession"
 	"github.com/NBISweden/submitter/internal/cli"
 	"github.com/NBISweden/submitter/internal/config"
+	"github.com/NBISweden/submitter/internal/dataset"
 	"github.com/NBISweden/submitter/internal/ingest"
 	"github.com/NBISweden/submitter/internal/mail"
 	"github.com/NBISweden/submitter/pkg/sdaclient"
@@ -36,18 +37,12 @@ func main() {
 	})
 
 	helpers.RunStep("Getting Access Token", func() error {
-		token, err = inputs.GetAccessToken()
+		token, err = conf.GetAccessToken()
 		return err
 	})
 
 	helpers.RunStep("Creating SDA Client", func() error {
-		sdaClient = &sdaclient.Client{
-			AccessToken:   token,
-			APIHost:       conf.APIHost,
-			UserID:        conf.UserID,
-			DatasetFolder: conf.DatasetFolder,
-			HTTPClient:    http.DefaultClient,
-		}
+		sdaClient = sdaclient.NewClient(token, conf.APIHost, conf.UserID, conf.DatasetFolder)
 		return nil
 	})
 
@@ -65,6 +60,10 @@ func main() {
 
 	if inputs.Command == helpers.Dataset {
 		helpers.RunStep("Creating Dataset", func() error {
+			err := dataset.CreateDataset(sdaClient, "fileIDs.txt", inputs.DryRun)
+			if err != nil {
+				return err
+			}
 			return nil
 		})
 	}
@@ -90,6 +89,10 @@ func main() {
 
 			return err
 		})
+	}
+
+	if inputs.Command == helpers.All {
+		fmt.Println("Under construction")
 	}
 
 }

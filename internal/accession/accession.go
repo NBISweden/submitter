@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"strings"
-	"math/big"
 
 	"github.com/NBISweden/submitter/pkg/sdaclient"
 )
@@ -51,10 +51,9 @@ func CreateAccessionIDs(sdaclient *sdaclient.Client, fileIDPath string, dryRun b
 			!strings.Contains(f.InboxPath, "PRIVATE") {
 			paths = append(paths, f.InboxPath)
 		}
-}
+	}
 
 	fmt.Printf("[Accession] Number of files to finalize: %d\n", len(paths))
-	fmt.Println("[Accession] Paths :", paths)
 
 	if dryRun {
 		fmt.Println("[Dry-Run] No files will not be given accession ids")
@@ -71,8 +70,8 @@ func CreateAccessionIDs(sdaclient *sdaclient.Client, fileIDPath string, dryRun b
 
 		payload, err := json.Marshal(map[string]string{
 			"accession_id": accessionID,
-			"filepath": filepath,
-			"user": sdaclient.UserID,
+			"filepath":     filepath,
+			"user":         sdaclient.UserID,
 		})
 		if err != nil {
 			return err
@@ -122,7 +121,7 @@ func generateAccessionID() (string, error) {
 			}
 			result[i] = chars[n.Int64()]
 		}
-		return  string(result), nil
+		return string(result), nil
 	}
 	partOne, err := genPart()
 	if err != nil {
