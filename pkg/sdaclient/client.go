@@ -22,6 +22,10 @@ func (c *Client) PostFileIngest(payload []byte) (*http.Response, error) {
 	return c.doRequest("POST", "file/ingest", payload)
 }
 
+func (c *Client) PostFileAccession(payload []byte) (*http.Response, error) {
+	return c.doRequest("POST", "file/accession", payload)
+}
+
 func (c *Client) doRequest(method, path string, body []byte) (*http.Response, error) {
 	url := fmt.Sprintf("%s/%s", c.APIHost, path)
 	req, err := http.NewRequest(method, url, bytes.NewReader(body))

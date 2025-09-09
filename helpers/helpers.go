@@ -59,7 +59,7 @@ func ValidCommands() []string {
 func RunStep(description string, fn func() error) {
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 	s.Color("cyan")
-	s.Suffix = " " + description
+	s.Suffix = " " + description + "\n"
 	s.Start()
 
 	err := fn()

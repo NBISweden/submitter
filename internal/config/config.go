@@ -31,11 +31,9 @@ func NewConfig(configFilePath string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Unable to parse configuration %v", err)
 	}
-	// We need underscores instead of @ signs in the email when calling SDA API
-	c.enforceEmailFormat()
 	return &c, nil
 }
 
-func (c *Config) enforceEmailFormat() {
-	c.UserID = strings.ReplaceAll(c.UserID, "@", "_")
+func (c *Config) GetEmailUnderscore() string {
+	return strings.ReplaceAll(c.UserID, "@", "_")
 }

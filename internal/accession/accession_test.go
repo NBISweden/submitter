@@ -12,7 +12,7 @@ func TestCreateFileIDs(t *testing.T) {
 	filePath := filepath.Join(tmpDir, "testfile.txt")
 
 	// --- Test 1: File should be created ---
-	err := createFileIDs(filePath, false)
+	_, err := createFileIDFile(filePath, false)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -23,14 +23,14 @@ func TestCreateFileIDs(t *testing.T) {
 	}
 
 	// --- Test 2: Calling again should return ErrFileAlreadyExists ---
-	err = createFileIDs(filePath, false)
+	_, err = createFileIDFile(filePath, false)
 	if err != ErrFileAlreadyExists {
 		t.Fatalf("expected ErrFileAlreadyExists, got %v", err)
 	}
 
 	// --- Test 3: Dry run should not create a file ---
 	dryRunFile := filepath.Join(tmpDir, "dryrun.txt")
-	err = createFileIDs(dryRunFile, true)
+	_, err = createFileIDFile(dryRunFile, true)
 	if err != nil {
 		t.Fatalf("expected no error in dry run, got %v", err)
 	}
