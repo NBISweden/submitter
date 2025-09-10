@@ -14,22 +14,22 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) error {
+func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) (int, error) {
 
 	response, err := sdaclient.GetUsersFiles()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	var files []File
 	if err := json.Unmarshal(body, &files); err != nil {
-		return err
+		return 0, err
 	}
 
 	var fileList []string
@@ -50,9 +50,7 @@ func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) error {
 	fmt.Printf("[Ingest] Number of files to ingest : %d\n", filesCount)
 	if dryRun {
 		fmt.Println("[Dry-Run] Files will not be ingested")
-		// Don't ask me why, but If I don't have this print the print above will not show
-		fmt.Println()
-		return nil
+		return filesCount, nil
 	}
 
 	for _, path := range fileList {
@@ -64,13 +62,13 @@ func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) error {
 
 		response, err = sdaclient.PostFileIngest(data)
 		if err != nil {
-			return err
+			return filesCount, err
 		}
 
 		io.Copy(io.Discard, response.Body)
 		response.Body.Close()
 	}
 
-	fmt.Println("Messages have been sent to Ingest queue")
-	return nil
+	fmt.Printf("[Ingest] Sending %d messages to ingest queue...\n", filesCount)
+	return filesCount, nil
 }

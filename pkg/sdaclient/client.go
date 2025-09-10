@@ -11,16 +11,18 @@ type Client struct {
 	APIHost       string
 	UserID        string
 	DatasetFolder string
+	DatasetID     string
 	HTTPClient    *http.Client
 }
 
-func NewClient(token string, apiHost string, userID string, datasetFolder string) *Client {
+func NewClient(token string, apiHost string, userID string, datasetFolder string, datasetID string) *Client {
 	return &Client{
-		AccessToken: token,
-		APIHost: apiHost,
-		UserID: userID,
+		AccessToken:   token,
+		APIHost:       apiHost,
+		UserID:        userID,
 		DatasetFolder: datasetFolder,
-		HTTPClient: http.DefaultClient,
+		DatasetID:     datasetID,
+		HTTPClient:    http.DefaultClient,
 	}
 }
 

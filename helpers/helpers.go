@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/NBISweden/submitter/internal/accession"
+	"github.com/NBISweden/submitter/pkg/sdaclient"
 	"github.com/briandowns/spinner"
 )
 
@@ -41,8 +43,7 @@ var commandMap = map[string]Command{
 	"accession": Accession,
 	"dataset":   Dataset,
 	"mail":      Mail,
-	"all":			 All,
-	"unknown":   Unknown,
+	"all":       All,
 }
 
 func ParseCommand(s string) Command {
@@ -74,4 +75,25 @@ func RunStep(description string, fn func() error) {
 		os.Exit(1)
 	}
 	fmt.Printf("✅ %s COMPLETE\n", description)
+}
+
+func WaitForAccession(client *sdaclient.Client, target int, interval time.Duration, timeout time.Duration) ([]string, error) {
+	deadline := time.Now().Add(timeout)
+	for {
+		paths, err := accession.GetVerifiedFilePaths(client)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(paths) >= target {
+			fmt.Printf("[Accession] Reached target: %d files\n", target)
+			return paths, nil
+		}
+
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("timeout reached, only got %d/%d files", len(paths), target)
+		}
+		fmt.Printf("[Accession] Found %d files, waiting for %d files. Interval: %s Timeout: %s\n", len(paths), target, interval, timeout)
+		time.Sleep(interval)
+	}
 }
