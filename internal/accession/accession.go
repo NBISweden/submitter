@@ -57,8 +57,6 @@ func CreateAccessionIDs(sdaclient *sdaclient.Client, fileIDPath string, dryRun b
 
 	if dryRun {
 		fmt.Println("[Dry-Run] No files will not be given accession ids")
-		// Don't ask me why, but If I don't have this print the print above will not show
-		fmt.Println()
 		return nil
 	}
 
@@ -87,6 +85,34 @@ func CreateAccessionIDs(sdaclient *sdaclient.Client, fileIDPath string, dryRun b
 		}
 	}
 	return nil
+}
+
+func GetVerifiedFilePaths(client *sdaclient.Client) ([]string, error) {
+	response, err := client.GetUsersFiles()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user files %w", err)
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body %w", err)
+	}
+
+	var files []File
+	if err := json.Unmarshal(body, &files); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal user files: %w", err)
+	}
+
+	var paths []string
+	for _, f := range files {
+		if f.FileStatus == "verified" &&
+			strings.Contains(f.InboxPath, client.DatasetFolder) &&
+			!strings.Contains(f.InboxPath, "PRIVATE") {
+			paths = append(paths, f.InboxPath)
+		}
+	}
+	return paths, nil
 }
 
 func createFileIDFile(fileIDPath string, dryrun bool) (*os.File, error) {

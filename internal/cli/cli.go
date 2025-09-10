@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"strings"
@@ -10,12 +9,10 @@ import (
 )
 
 type Inputs struct {
-	Command     helpers.Command
-	DryRun      bool
-	ConfigFile  string
+	Command    helpers.Command
+	DryRun     bool
+	ConfigFile string
 }
-
-var ErrRequieredArguments = errors.New("Missing requiered input(s)")
 
 func ParseArgs() (*Inputs, error) {
 	inputs := &Inputs{}
@@ -24,12 +21,15 @@ func ParseArgs() (*Inputs, error) {
 	flag.Parse()
 
 	args := flag.Args()
+	if len(args) == 0 {
+		return inputs, fmt.Errorf("Argument not supplied, need one of [%s]\n", strings.Join(helpers.ValidCommands(), ", "))
+	}
+
 	cmd := args[0]
 	inputs.Command = helpers.ParseCommand(cmd)
 	if inputs.Command == helpers.Unknown {
-		return inputs, fmt.Errorf("Command '%s' not valid, expecing one of [%s]\n", cmd, strings.Join(helpers.ValidCommands(), ", "))
+		return inputs, fmt.Errorf("Argument '%s' not valid, expecing one of [%s]\n", cmd, strings.Join(helpers.ValidCommands(), ", "))
 	}
 
 	return inputs, nil
 }
-
