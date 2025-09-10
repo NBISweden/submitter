@@ -53,7 +53,7 @@ func TestIngestFiles_HappyPath(t *testing.T) {
 		HTTPClient:    http.DefaultClient,
 	}
 
-	err := IngestFiles(sdaclient, dryRun)
+	_, err := IngestFiles(sdaclient, dryRun)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
