@@ -11,21 +11,22 @@ import (
 )
 
 type Payload struct {
-	FileIDs []string `json:"fileIDs"`
+	AccessionIDs []string `json:"accession_ids"`
+	DatasetID    string   `json:"dataset_id""`
+	User         string   `json:"user"`
 }
 
 func CreateDataset(sdaClient *sdaclient.Client, fileIDsPath string, dryRun bool) error {
 
 	var fileIDsList []string
 
-	// We can keep this stored in memory instead of reading from file. TODO: Refactor this.
 	file, err := os.Open(fileIDsPath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	fmt.Println("Reading ", fileIDsPath)
+	fmt.Println("[Dataset] Reading ", fileIDsPath)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		fileIDsList = append(fileIDsList, scanner.Text())
@@ -45,16 +46,20 @@ func CreateDataset(sdaClient *sdaclient.Client, fileIDsPath string, dryRun bool)
 
 	if len(fileIDsList) <= 100 {
 		payload := Payload{
-			FileIDs: fileIDsList,
+			AccessionIDs: fileIDsList,
+			DatasetID:    sdaClient.DatasetID,
+			User:         sdaClient.UserID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
 			return err
 		}
-		_, err = sdaClient.PostDatasetCreate(jsonData)
+		fmt.Printf("[Dataset] Sending payload:\n%s\n", string(jsonData))
+		r, err := sdaClient.PostDatasetCreate(jsonData)
 		if err != nil {
 			return err
 		}
+		fmt.Printf("[Dataset] Response from SDA API: %s\n", r.Status)
 	}
 
 	return nil
@@ -65,7 +70,9 @@ func sendInChunks(fileIDsList []string, sdaClient *sdaclient.Client) error {
 	chunks := slices.Chunk(fileIDsList, 100)
 	for chunk := range chunks {
 		payload := Payload{
-			FileIDs: chunk,
+			AccessionIDs: chunk,
+			DatasetID:    sdaClient.DatasetID,
+			User:         sdaClient.UserID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {

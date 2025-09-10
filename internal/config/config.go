@@ -1,9 +1,9 @@
 package config
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"bufio"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -19,7 +19,7 @@ type Config struct {
 	APIHost       string `yaml:"APIHost"`
 	SMTPHost      string `yaml:"SMTPHost"`
 	SMTPPort      int    `yaml:"SMTPPort"`
-	S3Config			string `yaml:"S3Config"`
+	S3Config      string `yaml:"S3Config"`
 }
 
 func NewConfig(configFilePath string) (*Config, error) {

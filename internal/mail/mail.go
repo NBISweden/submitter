@@ -87,9 +87,10 @@ func (mail *Mail) Notify(notifier string) error {
 
 	err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Email, mail.Lookup[notifier].Attachments)
 	if err != nil {
-		return fmt.Errorf("Failed to send notification %v", err)
+		return fmt.Errorf("Failed to send mail notification %v", err)
 	}
 
+	fmt.Printf("[Mail] Notified %s about dataset completeion\n", notifier)
 	return nil
 }
 

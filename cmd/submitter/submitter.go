@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/accession"
@@ -14,85 +16,100 @@ import (
 )
 
 func main() {
-	var inputs *cli.Inputs
-	var token string
-	var sdaClient *sdaclient.Client
-	var conf *config.Config
-	var err error
+	inputs, err := cli.ParseArgs()
+	if err != nil {
+		log.Fatalf("failed to parse args: %v", err)
+	}
 
-	helpers.RunStep("Parsing arguments", func() error {
-		inputs, err = cli.ParseArgs()
-		if err != nil {
-			return err
+	conf, err := config.NewConfig(inputs.ConfigFile)
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+
+	token, err := conf.GetAccessToken()
+	if err != nil {
+		log.Fatalf("failed to retrieve access token: %v", err)
+	}
+
+	client := sdaclient.NewClient(token, conf.APIHost, conf.UserID, conf.DatasetFolder, conf.DatasetID)
+
+	if err := runCommand(inputs.Command, client, conf, inputs.DryRun); err != nil {
+		log.Fatalf("command %q failed: %v", inputs.Command, err)
+	}
+}
+
+func runCommand(cmd helpers.Command, client *sdaclient.Client, conf *config.Config, dryRun bool) error {
+	switch cmd {
+	case helpers.Ingest:
+		return ingestFiles(client, dryRun)
+	case helpers.Accession:
+		return createAccession(client, "fileIDs.txt", dryRun)
+	case helpers.Dataset:
+		return createDataset(client, "fileIDs.txt", dryRun)
+	case helpers.Mail:
+		return sendMail(conf)
+	case helpers.All:
+		return runAll(client, conf, "fileIDs.txt", dryRun)
+	default:
+		return fmt.Errorf("unknown command: %s", cmd)
+	}
+}
+
+func ingestFiles(client *sdaclient.Client, dryRun bool) error {
+	_, err := ingest.IngestFiles(client, dryRun)
+	return err
+}
+
+func createAccession(client *sdaclient.Client, file string, dryRun bool) error {
+	return accession.CreateAccessionIDs(client, file, dryRun)
+}
+
+func createDataset(client *sdaclient.Client, file string, dryRun bool) error {
+	return dataset.CreateDataset(client, file, dryRun)
+}
+
+func sendMail(conf *config.Config) error {
+	m := mail.Configure(conf)
+
+	for _, recipient := range []string{"BigPicture", "Jarno", "Submitter"} {
+		if err := m.Notify(recipient); err != nil {
+			return fmt.Errorf("failed to notify %s: %w", recipient, err)
 		}
-		return nil
-	})
+	}
+	return nil
+}
 
-	helpers.RunStep("Reading Config", func() error {
-		conf, err = config.NewConfig(inputs.ConfigFile)
-		if err != nil {
-			return err
-		}
+func runAll(client *sdaclient.Client, conf *config.Config, file string, dryRun bool) error {
+	if dryRun {
+		fmt.Println("DryRun not applicable when running all, exiting...")
 		return nil
-	})
-
-	helpers.RunStep("Getting Access Token", func() error {
-		token, err = conf.GetAccessToken()
+	}
+	filesCount, err := ingest.IngestFiles(client, false)
+	if err != nil {
 		return err
-	})
-
-	helpers.RunStep("Creating SDA Client", func() error {
-		sdaClient = sdaclient.NewClient(token, conf.APIHost, conf.UserID, conf.DatasetFolder)
-		return nil
-	})
-
-	if inputs.Command == helpers.Ingest {
-		helpers.RunStep("Ingesting Files", func() error {
-			return ingest.IngestFiles(sdaClient, inputs.DryRun)
-		})
+	}
+	_, err = helpers.WaitForAccession(client, filesCount, 30*time.Second, 24*time.Hour)
+	if err != nil {
+		return err
+	}
+	err = accession.CreateAccessionIDs(client, file, false)
+	if err != nil {
+		return err
 	}
 
-	if inputs.Command == helpers.Accession {
-		helpers.RunStep("Creating Accession IDs", func() error {
-			return accession.CreateAccessionIDs(sdaClient, "fileIDs.txt", inputs.DryRun)
-		})
+	// TODO: Figure out how to solve this. Can I poll for something in SDA to know when we are ready to send next request?
+	fmt.Println("[Submitter] Waiting 2 minutes before sending dataset creation request...")
+	time.Sleep(2 * time.Minute)
+
+	err = dataset.CreateDataset(client, file, false)
+	if err != nil {
+		return err
 	}
 
-	if inputs.Command == helpers.Dataset {
-		helpers.RunStep("Creating Dataset", func() error {
-			err := dataset.CreateDataset(sdaClient, "fileIDs.txt", inputs.DryRun)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
+	err = sendMail(conf)
+	if err != nil {
+		return err
 	}
-
-	if inputs.Command == helpers.Mail {
-		helpers.RunStep("Sending email notification", func() error {
-			m := mail.Configure(conf)
-
-			err := m.Notify("BigPicture")
-			if err != nil {
-				return err
-			}
-
-			err = m.Notify("Jarno")
-			if err != nil {
-				return err
-			}
-
-			err = m.Notify("Submitter")
-			if err != nil {
-				return err
-			}
-
-			return err
-		})
-	}
-
-	if inputs.Command == helpers.All {
-		fmt.Println("Under construction")
-	}
-
+	fmt.Printf("[Submitter] Dataset Submission %s completed!\n", conf.DatasetID)
+	return nil
 }
