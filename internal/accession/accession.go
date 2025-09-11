@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/NBISweden/submitter/pkg/sdaclient"
 )
@@ -20,7 +21,12 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func CreateAccessionIDs(sdaclient *sdaclient.Client, fileIDPath string, dryRun bool) error {
+type StableID struct {
+	AccessionID string `json:"accessionID"`
+	InboxPath   string `json:"inboxPath"`
+}
+
+func CreateAccessionIDs(client *sdaclient.Client, fileIDPath string, dryRun bool) error {
 	file, err := createFileIDFile(fileIDPath, dryRun)
 	if err != nil {
 		fmt.Printf("Error occoured when trying to create file: %s\n", fileIDPath)
@@ -28,7 +34,7 @@ func CreateAccessionIDs(sdaclient *sdaclient.Client, fileIDPath string, dryRun b
 	}
 	defer file.Close()
 
-	response, err := sdaclient.GetUsersFiles()
+	response, err := client.GetUsersFiles()
 	if err != nil {
 		return err
 	}
@@ -47,7 +53,7 @@ func CreateAccessionIDs(sdaclient *sdaclient.Client, fileIDPath string, dryRun b
 	var paths []string
 	for _, f := range files {
 		if f.FileStatus == "verified" &&
-			strings.Contains(f.InboxPath, sdaclient.DatasetFolder) &&
+			strings.Contains(f.InboxPath, client.DatasetFolder) &&
 			!strings.Contains(f.InboxPath, "PRIVATE") {
 			paths = append(paths, f.InboxPath)
 		}
@@ -69,13 +75,13 @@ func CreateAccessionIDs(sdaclient *sdaclient.Client, fileIDPath string, dryRun b
 		payload, err := json.Marshal(map[string]string{
 			"accession_id": accessionID,
 			"filepath":     filepath,
-			"user":         sdaclient.UserID,
+			"user":         client.UserID,
 		})
 		if err != nil {
 			return err
 		}
 
-		_, err = sdaclient.PostFileAccession(payload)
+		_, err = client.PostFileAccession(payload)
 		if err != nil {
 			return err
 		}
@@ -84,6 +90,12 @@ func CreateAccessionIDs(sdaclient *sdaclient.Client, fileIDPath string, dryRun b
 			return err
 		}
 	}
+
+	err = createStableIDsFile(client)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -159,4 +171,44 @@ func generateAccessionID() (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("aa-File-%s-%s", partOne, partTwo), nil
+}
+
+func createStableIDsFile(client *sdaclient.Client) error {
+	delay := 5 * time.Second
+	fmt.Printf("[Accession] Waiting %s before creating stable ids\n", delay)
+	time.Sleep(delay)
+
+	filePath := fmt.Sprintf("data/%s-stableIDs.txt", client.DatasetFolder)
+	if _, err := os.Stat(filePath); err == nil {
+		return ErrFileAlreadyExists
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	r, err := client.GetUsersFilesWithPrefix()
+	if err != nil {
+		return err
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	var stableIDs []StableID
+	if err := json.Unmarshal(body, &stableIDs); err != nil {
+		return err
+	}
+
+	for _, f := range stableIDs {
+		fmt.Fprintf(file, "%s %s\n", f.AccessionID, f.InboxPath)
+	}
+
+	fmt.Printf("[Accession] Created file with stable ids in %s\n", filePath)
+	return nil
 }
