@@ -2,12 +2,10 @@ package helpers
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/NBISweden/submitter/internal/accession"
 	"github.com/NBISweden/submitter/pkg/sdaclient"
-	"github.com/briandowns/spinner"
 )
 
 type Command int
@@ -61,22 +59,6 @@ func ValidCommands() []string {
 	return cmds
 }
 
-func RunStep(description string, fn func() error) {
-	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-	s.Color("cyan")
-	s.Suffix = " " + description + "\n"
-	s.Start()
-
-	err := fn()
-	s.Stop()
-
-	if err != nil {
-		fmt.Printf("❌ %s FAILED: %v\n", description, err)
-		os.Exit(1)
-	}
-	fmt.Printf("✅ %s COMPLETE\n", description)
-}
-
 func WaitForAccession(client *sdaclient.Client, target int, interval time.Duration, timeout time.Duration) ([]string, error) {
 	deadline := time.Now().Add(timeout)
 	for {
@@ -86,7 +68,6 @@ func WaitForAccession(client *sdaclient.Client, target int, interval time.Durati
 		}
 
 		if len(paths) >= target {
-			fmt.Printf("[Accession] Reached target: %d files\n", target)
 			return paths, nil
 		}
 
