@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 type Client struct {
@@ -24,6 +25,21 @@ func NewClient(token string, apiHost string, userID string, datasetFolder string
 		DatasetID:     datasetID,
 		HTTPClient:    http.DefaultClient,
 	}
+}
+
+func (c *Client) GetUsersFilesWithPrefix() (*http.Response, error) {
+	basePath := fmt.Sprintf("users/%s/files", c.UserID)
+
+	u, err := url.Parse(basePath)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse base path: %w", err)
+	}
+
+	q := u.Query()
+	q.Set("path_prefix", c.DatasetFolder)
+	u.RawQuery = q.Encode()
+
+	return c.doRequest("GET", u.String(), nil)
 }
 
 func (c *Client) GetUsersFiles() (*http.Response, error) {
