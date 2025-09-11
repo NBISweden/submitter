@@ -26,3 +26,8 @@ go.work.sum
 
 # Configuration file in root dir
 config.yaml
+
+# Binary if no output is specified
+submitter
+
+fileIDs.txt
