@@ -12,7 +12,7 @@ import (
 
 type Payload struct {
 	AccessionIDs []string `json:"accession_ids"`
-	DatasetID    string   `json:"dataset_id""`
+	DatasetID    string   `json:"dataset_id"`
 	User         string   `json:"user"`
 }
 
@@ -68,7 +68,9 @@ func CreateDataset(sdaClient *sdaclient.Client, fileIDsPath string, dryRun bool)
 func sendInChunks(fileIDsList []string, sdaClient *sdaclient.Client) error {
 	fmt.Println("[Dataset] More than 100 entries. Sending in chunks of 100")
 	chunks := slices.Chunk(fileIDsList, 100)
-	for chunk := range chunks {
+	allChunks := slices.Collect(chunks)
+	totalChunks := len(allChunks)
+	for i, chunk := range allChunks {
 		payload := Payload{
 			AccessionIDs: chunk,
 			DatasetID:    sdaClient.DatasetID,
@@ -78,10 +80,11 @@ func sendInChunks(fileIDsList []string, sdaClient *sdaclient.Client) error {
 		if err != nil {
 			return err
 		}
-		_, err = sdaClient.PostDatasetCreate(jsonData)
+		r, err := sdaClient.PostDatasetCreate(jsonData)
 		if err != nil {
 			return err
 		}
+		fmt.Printf("[Dataset] Response from SDA API: %s\n (%d/%d)", r.Status, i, totalChunks)
 	}
 	return nil
 }
