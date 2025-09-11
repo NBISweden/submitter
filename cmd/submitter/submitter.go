@@ -16,6 +16,7 @@ import (
 )
 
 func main() {
+	start := time.Now()
 	inputs, err := cli.ParseArgs()
 	if err != nil {
 		log.Fatalf("failed to parse args: %v", err)
@@ -36,6 +37,8 @@ func main() {
 	if err := runCommand(inputs.Command, client, conf, inputs.DryRun); err != nil {
 		log.Fatalf("command %q failed: %v", inputs.Command, err)
 	}
+	elapsed := time.Since(start)
+	fmt.Printf("[Submitter] Execution time: %s\n", elapsed)
 }
 
 func runCommand(cmd helpers.Command, client *sdaclient.Client, conf *config.Config, dryRun bool) error {
@@ -88,7 +91,7 @@ func runAll(client *sdaclient.Client, conf *config.Config, file string, dryRun b
 	if err != nil {
 		return err
 	}
-	_, err = helpers.WaitForAccession(client, filesCount, 30*time.Second, 24*time.Hour)
+	_, err = helpers.WaitForAccession(client, filesCount, 5*time.Minute, 24*time.Hour)
 	if err != nil {
 		return err
 	}
@@ -97,19 +100,16 @@ func runAll(client *sdaclient.Client, conf *config.Config, file string, dryRun b
 		return err
 	}
 
-	// TODO: Figure out how to solve this. Can I poll for something in SDA to know when we are ready to send next request?
-	fmt.Println("[Submitter] Waiting 2 minutes before sending dataset creation request...")
-	time.Sleep(2 * time.Minute)
+	// We give some time for the SDA backend to process our accession ids. During test-runs it's been fine with 2 minutes. Might need more.
+	delay := 2 * time.Minute
+	fmt.Printf("[Submitter] Waiting %s before sending dataset creation request\n", delay)
+	time.Sleep(delay)
 
 	err = dataset.CreateDataset(client, file, false)
 	if err != nil {
 		return err
 	}
 
-	err = sendMail(conf)
-	if err != nil {
-		return err
-	}
 	fmt.Printf("[Submitter] Dataset Submission %s completed!\n", conf.DatasetID)
 	return nil
 }

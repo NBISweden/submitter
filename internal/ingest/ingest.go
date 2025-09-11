@@ -69,6 +69,6 @@ func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) (int, error) {
 		response.Body.Close()
 	}
 
-	fmt.Printf("[Ingest] Sending %d messages to ingest queue...\n", filesCount)
+	fmt.Printf("[Ingest] Starting ingest queue for %d files\n", filesCount)
 	return filesCount, nil
 }
