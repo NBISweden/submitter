@@ -84,7 +84,7 @@ func sendInChunks(fileIDsList []string, sdaClient *sdaclient.Client) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("[Dataset] Response from SDA API: %s\n (%d/%d)", r.Status, i, totalChunks)
+		fmt.Printf("[Dataset] Response from SDA API: %s (%d/%d)\n", r.Status, i, totalChunks)
 	}
 	return nil
 }
