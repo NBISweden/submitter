@@ -47,7 +47,7 @@ func Configure(c *config.Config) *Mail {
 			"Submitter": {
 				Template:    "internal/mail/templates/notify-submitter.html",
 				Subject:     "Successful Ingestion of Your Dataset Submission",
-				Attachments: []string{"data/stableIDs.txt"},
+				Attachments: []string{fmt.Sprintf("data/%s-stableIDs.txt", c.DatasetFolder)},
 			},
 			"BigPicture": {
 				Template:    "internal/mail/templates/notify-bigpicture.html",
