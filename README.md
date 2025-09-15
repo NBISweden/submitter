@@ -1,8 +1,8 @@
 # submitter
 
-This project can be used to to help with administrative tasks during dataset submission
+This project can be used to to help with administrative tasks during dataset submission to the big picture project. This tool wraps a set of rules and buisseness logic around API calls to the big picture api. It uses the users privellages to do the needed operations.
 
-## Usage
+## usage
 
 The CLI requires a **command** and several input arguments. Commands must be one of:
 
@@ -12,14 +12,14 @@ The CLI requires a **command** and several input arguments. Commands must be one
 - `mail`
 - `all`
 
-### Arguments
+### arguments
 
 | Flag              | Default                          | Required | Description                                                                 |
 |-------------------|----------------------------------|----------|-----------------------------------------------------------------------------|
 | `-dry-run`        | `true`                           | No       | Run without executing state changing API calls                              |
 | `-config`         | `config.yaml`                    | No       | The config file with all input information and other needed metadata        |
 
-### Example
+### example
 
 Running ingestion with specific input arguments:
 
@@ -30,9 +30,9 @@ Running ingestion with specific input arguments:
   ingest
 ```
 
-### Configuration
+### configuration
 
-To run submitter a configuration file is needed with proper input, example of the config file can be found in the root of the repo in `config.yaml`
+To run submitter a configuration file is needed with proper input, example of the config file: `config.yaml`
 
 example: 
 ```yaml
@@ -62,7 +62,7 @@ S3Config: /home/erik/s3-secrets/s3cmd-inbox.conf
 | S3Config      | The path where the s3cmd config resides              |
 
 
-## Testing
+## testing
 
 Unit tests using [pkg.go.dev/testing](https://pkg.go.dev/testing) 
 
