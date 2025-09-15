@@ -46,13 +46,13 @@ func runCommand(cmd helpers.Command, client *sdaclient.Client, conf *config.Conf
 	case helpers.Ingest:
 		return ingestFiles(client, dryRun)
 	case helpers.Accession:
-		return createAccession(client, "fileIDs.txt", dryRun)
+		return createAccession(client, dryRun)
 	case helpers.Dataset:
-		return createDataset(client, "fileIDs.txt", dryRun)
+		return createDataset(client, dryRun)
 	case helpers.Mail:
 		return sendMail(conf)
 	case helpers.All:
-		return runAll(client, conf, "fileIDs.txt", dryRun)
+		return runAll(client, conf, dryRun)
 	default:
 		return fmt.Errorf("unknown command: %s", cmd)
 	}
@@ -63,12 +63,12 @@ func ingestFiles(client *sdaclient.Client, dryRun bool) error {
 	return err
 }
 
-func createAccession(client *sdaclient.Client, file string, dryRun bool) error {
-	return accession.CreateAccessionIDs(client, file, dryRun)
+func createAccession(client *sdaclient.Client, dryRun bool) error {
+	return accession.CreateAccessionIDs(client, dryRun)
 }
 
-func createDataset(client *sdaclient.Client, file string, dryRun bool) error {
-	return dataset.CreateDataset(client, file, dryRun)
+func createDataset(client *sdaclient.Client, dryRun bool) error {
+	return dataset.CreateDataset(client, dryRun)
 }
 
 func sendMail(conf *config.Config) error {
@@ -82,9 +82,9 @@ func sendMail(conf *config.Config) error {
 	return nil
 }
 
-func runAll(client *sdaclient.Client, conf *config.Config, file string, dryRun bool) error {
+func runAll(client *sdaclient.Client, conf *config.Config, dryRun bool) error {
 	if dryRun {
-		fmt.Println("DryRun not applicable when running all, exiting...")
+		fmt.Println("dry run true enabled, exiting...")
 		return nil
 	}
 	filesCount, err := ingest.IngestFiles(client, false)
@@ -95,7 +95,7 @@ func runAll(client *sdaclient.Client, conf *config.Config, file string, dryRun b
 	if err != nil {
 		return err
 	}
-	err = accession.CreateAccessionIDs(client, file, false)
+	err = accession.CreateAccessionIDs(client, false)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func runAll(client *sdaclient.Client, conf *config.Config, file string, dryRun b
 	fmt.Printf("[Submitter] Waiting %s before sending dataset creation request\n", delay)
 	time.Sleep(delay)
 
-	err = dataset.CreateDataset(client, file, false)
+	err = dataset.CreateDataset(client, false)
 	if err != nil {
 		return err
 	}
