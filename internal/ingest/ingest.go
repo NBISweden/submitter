@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/NBISweden/submitter/pkg/sdaclient"
+	"github.com/schollz/progressbar/v3"
 )
 
 type File struct {
@@ -53,7 +54,9 @@ func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) (int, error) {
 		return filesCount, nil
 	}
 
+	bar := progressbar.Default(int64(len(fileList)))
 	for _, path := range fileList {
+		bar.Add(1)
 		payload := map[string]string{
 			"filepath": path,
 			"user":     sdaclient.UserID,
