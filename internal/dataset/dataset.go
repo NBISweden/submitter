@@ -16,17 +16,18 @@ type Payload struct {
 	User         string   `json:"user"`
 }
 
-func CreateDataset(sdaClient *sdaclient.Client, fileIDsPath string, dryRun bool) error {
+func CreateDataset(client *sdaclient.Client, dryRun bool) error {
 
 	var fileIDsList []string
 
-	file, err := os.Open(fileIDsPath)
+	filePath := fmt.Sprintf("data/%s-fileIDs.txt", client.DatasetFolder)
+	file, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	fmt.Println("[Dataset] Reading ", fileIDsPath)
+	fmt.Println("[Dataset] Reading ", filePath)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		fileIDsList = append(fileIDsList, scanner.Text())
@@ -38,7 +39,7 @@ func CreateDataset(sdaClient *sdaclient.Client, fileIDsPath string, dryRun bool)
 	}
 
 	if len(fileIDsList) > 100 {
-		err := sendInChunks(fileIDsList, sdaClient)
+		err := sendInChunks(fileIDsList, client)
 		if err != nil {
 			return err
 		}
@@ -47,15 +48,15 @@ func CreateDataset(sdaClient *sdaclient.Client, fileIDsPath string, dryRun bool)
 	if len(fileIDsList) <= 100 {
 		payload := Payload{
 			AccessionIDs: fileIDsList,
-			DatasetID:    sdaClient.DatasetID,
-			User:         sdaClient.UserID,
+			DatasetID:    client.DatasetID,
+			User:         client.UserID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("[Dataset] Sending payload:\n%s\n", string(jsonData))
-		r, err := sdaClient.PostDatasetCreate(jsonData)
+		r, err := client.PostDatasetCreate(jsonData)
 		if err != nil {
 			return err
 		}
@@ -65,7 +66,7 @@ func CreateDataset(sdaClient *sdaclient.Client, fileIDsPath string, dryRun bool)
 	return nil
 }
 
-func sendInChunks(fileIDsList []string, sdaClient *sdaclient.Client) error {
+func sendInChunks(fileIDsList []string, client *sdaclient.Client) error {
 	fmt.Println("[Dataset] More than 100 entries. Sending in chunks of 100")
 	chunks := slices.Chunk(fileIDsList, 100)
 	allChunks := slices.Collect(chunks)
@@ -73,14 +74,14 @@ func sendInChunks(fileIDsList []string, sdaClient *sdaclient.Client) error {
 	for i, chunk := range allChunks {
 		payload := Payload{
 			AccessionIDs: chunk,
-			DatasetID:    sdaClient.DatasetID,
-			User:         sdaClient.UserID,
+			DatasetID:    client.DatasetID,
+			User:         client.UserID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
 			return err
 		}
-		r, err := sdaClient.PostDatasetCreate(jsonData)
+		r, err := client.PostDatasetCreate(jsonData)
 		if err != nil {
 			return err
 		}
