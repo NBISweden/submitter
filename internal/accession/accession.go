@@ -26,10 +26,11 @@ type StableID struct {
 	InboxPath   string `json:"inboxPath"`
 }
 
-func CreateAccessionIDs(client *sdaclient.Client, fileIDPath string, dryRun bool) error {
-	file, err := createFileIDFile(fileIDPath, dryRun)
+func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
+	filePath := fmt.Sprintf("data/%s-fileIDs.txt", client.DatasetFolder)
+	file, err := createFileIDFile(filePath, dryRun)
 	if err != nil {
-		fmt.Printf("Error occoured when trying to create file: %s\n", fileIDPath)
+		fmt.Printf("Error occoured when trying to create file: %s\n", filePath)
 		return err
 	}
 	defer file.Close()
@@ -59,7 +60,7 @@ func CreateAccessionIDs(client *sdaclient.Client, fileIDPath string, dryRun bool
 		}
 	}
 
-	fmt.Printf("[Accession] Number of files to finalize: %d\n", len(paths))
+	fmt.Printf("[Accession] Files found for accession id creation: %d\n", len(paths))
 
 	if dryRun {
 		fmt.Println("[Dry-Run] No files will not be given accession ids")
@@ -174,7 +175,7 @@ func generateAccessionID() (string, error) {
 }
 
 func createStableIDsFile(client *sdaclient.Client) error {
-	delay := 5 * time.Second
+	delay := 30 * time.Second
 	fmt.Printf("[Accession] Waiting %s before creating stable ids\n", delay)
 	time.Sleep(delay)
 
