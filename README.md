@@ -32,9 +32,8 @@ Running ingestion with specific input arguments:
 
 ### configuration
 
-To run submitter a configuration file is needed with proper input, example of the config file: `config.yaml`
+To run submitter a configuration file is needed with proper input, example: 
 
-example: 
 ```yaml
 Uploader: John Doe
 UserID: testu@lifescience-ri.eu
