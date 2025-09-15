@@ -41,7 +41,7 @@ DatasetID: aa-Dataset-benchmark-1k
 DatasetFolder: DATASET_BENCHMARK_1K
 Email: myemail@nbis.se
 Password: mypassword
-APIHost: api.bp.nbis.se
+APIHost: https://api.bp.nbis.se
 SMTPHost: tickets.nbis.se
 SMTPPort: 587
 S3Config: /home/user/s3cmd.conf
