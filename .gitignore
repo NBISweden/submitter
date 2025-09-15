@@ -30,4 +30,5 @@ config.yaml
 # Binary if no output is specified
 submitter
 
-fileIDs.txt
+# Output files
+data/*
