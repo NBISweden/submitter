@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/NBISweden/submitter/pkg/sdaclient"
+	"github.com/schollz/progressbar/v3"
 )
 
 type Payload struct {
@@ -71,7 +72,9 @@ func sendInChunks(fileIDsList []string, client *sdaclient.Client) error {
 	chunks := slices.Chunk(fileIDsList, 100)
 	allChunks := slices.Collect(chunks)
 	totalChunks := len(allChunks)
-	for i, chunk := range allChunks {
+	bar := progressbar.Default(int64(totalChunks))
+	for _, chunk := range allChunks {
+		bar.Add(1)
 		payload := Payload{
 			AccessionIDs: chunk,
 			DatasetID:    client.DatasetID,
@@ -85,7 +88,9 @@ func sendInChunks(fileIDsList []string, client *sdaclient.Client) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("[Dataset] Response from SDA API: %s (%d/%d)\n", r.Status, i, totalChunks)
+		if r.StatusCode != 200 {
+			fmt.Printf("[Dataset] bad response from SDA API %s for %s", r.Status, chunk)
+		}
 	}
 	return nil
 }
