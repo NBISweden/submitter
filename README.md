@@ -44,7 +44,7 @@ Password: mypassword
 APIHost: api.bp.nbis.se
 SMTPHost: tickets.nbis.se
 SMTPPort: 587
-S3Config: /home/erik/s3-secrets/s3cmd-inbox.conf
+S3Config: /home/user/s3cmd.conf
 ```
 
 | Name          | Description                                          |
