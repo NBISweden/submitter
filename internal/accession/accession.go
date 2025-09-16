@@ -69,7 +69,7 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 	}
 
 	bar := progressbar.Default(int64(len(paths)))
-	bar.Describe("Creating accession ids")
+	bar.Describe("[Accession] Creating accession ids")
 	for _, filepath := range paths {
 		bar.Add(1)
 		accessionID, err := generateAccessionID()
@@ -96,9 +96,11 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 		}
 	}
 
+	fmt.Printf("[Accesion] All %d files assigned accession IDs\n", len(paths))
+
 	err = createStableIDsFile(client)
 	if err != nil {
-		return err
+		fmt.Println("[Accession] Failed to create file with stable ids: %w", err)
 	}
 
 	return nil
@@ -107,13 +109,13 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 func GetVerifiedFilePaths(client *sdaclient.Client) ([]string, error) {
 	response, err := client.GetUsersFiles()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch user files %w", err)
+		return nil, fmt.Errorf("[Accession] Failed to fetch user files %w", err)
 	}
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body %w", err)
+		return nil, fmt.Errorf("[Accession] Failed to read response body %w", err)
 	}
 
 	var files []File

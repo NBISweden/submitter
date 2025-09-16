@@ -28,7 +28,7 @@ func CreateDataset(client *sdaclient.Client, dryRun bool) error {
 	}
 	defer file.Close()
 
-	fmt.Println("[Dataset] Reading ", filePath)
+	fmt.Printf("[Dataset] Reading %s\n", filePath)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		fileIDsList = append(fileIDsList, scanner.Text())
@@ -64,6 +64,7 @@ func CreateDataset(client *sdaclient.Client, dryRun bool) error {
 		fmt.Printf("[Dataset] Response from SDA API: %s\n", r.Status)
 	}
 
+	fmt.Println("[Dataset] creation of dataset completed!")
 	return nil
 }
 
@@ -73,7 +74,7 @@ func sendInChunks(fileIDsList []string, client *sdaclient.Client) error {
 	allChunks := slices.Collect(chunks)
 	totalChunks := len(allChunks)
 	bar := progressbar.Default(int64(totalChunks))
-	bar.Describe("Creating dataset")
+	bar.Describe("[Dataset] Creating dataset")
 	for _, chunk := range allChunks {
 		bar.Add(1)
 		payload := Payload{
