@@ -1,9 +1,8 @@
-# submitter
-
 <div align="center">
 :construction: This project is still under development and things might be buggy or work in unexpected ways :construction:
 </div>
 
+# submitter
 This project can be used to to help with administrative tasks during dataset submission to the big picture project. This tool wraps a set of rules and buisseness logic around API calls to the big picture api. It uses the users privellages to do the needed operations.
 
 ### usage
