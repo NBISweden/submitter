@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/NBISweden/submitter/pkg/sdaclient"
 	"github.com/schollz/progressbar/v3"
@@ -20,11 +19,6 @@ var ErrFileAlreadyExists = errors.New("File already exists")
 type File struct {
 	InboxPath  string `json:"inboxPath"`
 	FileStatus string `json:"fileStatus"`
-}
-
-type StableID struct {
-	AccessionID string `json:"accessionID"`
-	InboxPath   string `json:"inboxPath"`
 }
 
 func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
@@ -61,15 +55,14 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 		}
 	}
 
-	fmt.Printf("[Accession] Files found for accession id creation: %d\n", len(paths))
+	fmt.Printf("\n[Accession] Files found for accession id creation: %d\n", len(paths))
 
 	if dryRun {
 		fmt.Println("[Dry-Run] No files will not be given accession ids")
 		return nil
 	}
 
-	bar := progressbar.Default(int64(len(paths)))
-	bar.Describe("[Accession] Creating accession ids")
+	bar := progressbar.Default(int64(len(paths)), "[Accession] Creating accession ids")
 	for _, filepath := range paths {
 		bar.Add(1)
 		accessionID, err := generateAccessionID()
@@ -97,11 +90,6 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 	}
 
 	fmt.Printf("[Accesion] All %d files assigned accession IDs\n", len(paths))
-
-	err = createStableIDsFile(client)
-	if err != nil {
-		fmt.Println("[Accession] Failed to create file with stable ids: %w", err)
-	}
 
 	return nil
 }
@@ -178,44 +166,4 @@ func generateAccessionID() (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("aa-File-%s-%s", partOne, partTwo), nil
-}
-
-func createStableIDsFile(client *sdaclient.Client) error {
-	delay := 30 * time.Second
-	fmt.Printf("[Accession] Waiting %s before creating stable ids\n", delay)
-	time.Sleep(delay)
-
-	filePath := fmt.Sprintf("data/%s-stableIDs.txt", client.DatasetFolder)
-	if _, err := os.Stat(filePath); err == nil {
-		return ErrFileAlreadyExists
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	r, err := client.GetUsersFilesWithPrefix()
-	if err != nil {
-		return err
-	}
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
-
-	var stableIDs []StableID
-	if err := json.Unmarshal(body, &stableIDs); err != nil {
-		return err
-	}
-
-	for _, f := range stableIDs {
-		fmt.Fprintf(file, "%s %s\n", f.AccessionID, f.InboxPath)
-	}
-
-	fmt.Printf("[Accession] Created file with stable ids in %s\n", filePath)
-	return nil
 }
