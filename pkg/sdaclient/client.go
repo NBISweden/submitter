@@ -61,7 +61,11 @@ func (c *Client) PostDatasetCreate(payload []byte) (*http.Response, error) {
 }
 
 func (c *Client) doRequest(method, path string, body []byte) (*http.Response, error) {
-	bar := progressbar.Default(-1, "[Client] Waiting for SDA API")
+	bar := progressbar.NewOptions(-1,
+		progressbar.OptionSetDescription("Waiting on response from the SDA API"),
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionSpinnerType(70),
+	)
 	url := fmt.Sprintf("%s/%s", c.APIHost, path)
 	req, err := http.NewRequest(method, url, bytes.NewReader(body))
 	if err != nil {
