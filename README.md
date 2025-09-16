@@ -4,7 +4,9 @@ This project can be used to to help with administrative tasks during dataset sub
 
 ## usage
 
-The CLI requires a **command** and several input arguments. Commands must be one of:
+The CLI have one requiered argument, called a **command** and non-requiered input arguments as flags. The rest of configuration is done through a config file. See more in the configuration section.
+
+Commands must be one of:
 
 - `ingest`
 - `accession`
@@ -21,7 +23,7 @@ The CLI requires a **command** and several input arguments. Commands must be one
 
 ### example
 
-Running ingestion with specific input arguments:
+Running ingestion:
 
 ```bash
 ./submitter \
