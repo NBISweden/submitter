@@ -64,6 +64,7 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 	bar := progressbar.NewOptions(-1,
 		progressbar.OptionSetDescription("Waiting on response from the SDA API"),
 		progressbar.OptionSetRenderBlankState(true),
+		// See https://github.com/schollz/progressbar/blob/main/spinners.go for all int -> spinner mappings
 		progressbar.OptionSpinnerType(70),
 	)
 	url := fmt.Sprintf("%s/%s", c.APIHost, path)
