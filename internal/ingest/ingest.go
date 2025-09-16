@@ -54,8 +54,7 @@ func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) (int, error) {
 		return filesCount, nil
 	}
 
-	bar := progressbar.Default(int64(len(fileList)))
-	bar.Describe("[Ingest] Running ingestion")
+	bar := progressbar.Default(int64(len(fileList)), "[Ingest] Running ingestion")
 	for _, path := range fileList {
 		bar.Add(1)
 		payload := map[string]string{

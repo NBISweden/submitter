@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 type Client struct {
@@ -59,11 +61,13 @@ func (c *Client) PostDatasetCreate(payload []byte) (*http.Response, error) {
 }
 
 func (c *Client) doRequest(method, path string, body []byte) (*http.Response, error) {
+	bar := progressbar.Default(-1, "[Client] Waiting for SDA API")
 	url := fmt.Sprintf("%s/%s", c.APIHost, path)
 	req, err := http.NewRequest(method, url, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("creating %s request to %s: %w", method, url, err)
 	}
+	bar.Add(1)
 
 	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
 	if body != nil {
