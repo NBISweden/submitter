@@ -71,11 +71,9 @@ S3Config: /home/user/s3cmd.conf
 
 `anwser:` Since the goal is to have a end-to-end flow of all stages ingestion -> accession -> dataset I feelt it was usefull during testing to understand what package logged something. So I added the package name in brackets whenever something is logged / printed. That way it was easier to understand which part of the flow executed or failed. This can be reworked and / or retought at some point.
 
-
 `question:` What's the deal with the -dry-run flag? 
 
 `anwser:` Since many iterations and testing is requiered when developing this project I never wanted to accedentally send something or change db states. To avoid this the dry-run flag is (as of this writing) default set to true. This means if you want to actually execute something you need to run `./submitter --dry-run=false <COMMAND>` for it to take full effect.
-
 
 `question:` How do I contribute?
 
