@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/NBISweden/submitter/pkg/sdaclient"
+	"github.com/schollz/progressbar/v3"
 )
 
 var ErrFileAlreadyExists = errors.New("File already exists")
@@ -67,7 +68,10 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 		return nil
 	}
 
+	bar := progressbar.Default(int64(len(paths)))
+	bar.Describe("Creating accession ids")
 	for _, filepath := range paths {
+		bar.Add(1)
 		accessionID, err := generateAccessionID()
 		if err != nil {
 			return err
