@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"os"
 
 	"github.com/NBISweden/submitter/internal/config"
 	"gopkg.in/gomail.v2"
@@ -71,6 +72,10 @@ func (mail *Mail) send(subject string, message string, reciever string, attachem
 	m.SetHeader("Subject", subject)
 	m.SetBody("text/html", message)
 
+	// Enforce that the wanted attachements are files that exists
+	if err := attachementsExists(attachements); err != nil {
+		return err
+	}
 	for _, file := range attachements {
 		m.Attach(file)
 	}
@@ -105,4 +110,26 @@ func renderTemplate(filename string, data TemplateData) (string, error) {
 	}
 
 	return buf.String(), nil
+}
+
+func attachementsExists(attachements []string) error {
+	for _, attachement := range attachements {
+		info, err := os.Stat(attachement)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("file does not exist: %s", attachement)
+			}
+			return fmt.Errorf("error checking file %s: %w", attachement, err)
+		}
+
+		if info.IsDir() {
+			return fmt.Errorf("path is a directory, not a file: %s", attachement)
+		}
+
+		if info.Size() == 0 {
+			return fmt.Errorf("file is empty: %s", attachement)
+		}
+	}
+
+	return nil
 }
