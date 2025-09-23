@@ -27,6 +27,7 @@ type TemplateData struct {
 }
 
 type Notifiers struct {
+	Email       string
 	Template    string
 	Subject     string
 	Attachments []string
@@ -46,16 +47,19 @@ func Configure(c *config.Config) *Mail {
 		},
 		Lookup: map[string]Notifiers{
 			"Submitter": {
+				Email:       c.UploaderEmail,
 				Template:    "internal/mail/templates/notify-submitter.html",
 				Subject:     "Successful Ingestion of Your Dataset Submission",
 				Attachments: []string{fmt.Sprintf("data/%s-stableIDs.txt", c.DatasetFolder)},
 			},
 			"BigPicture": {
+				Email:       "submit@bigpicture.eu",
 				Template:    "internal/mail/templates/notify-bigpicture.html",
 				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
 				Attachments: []string{"data/dataset.txt", "data/policy.txt"},
 			},
 			"Minttu": {
+				Email:       "minttu.sauramo@hus.fi",
 				Template:    "internal/mail/templates/notify-minttu.html",
 				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
 				Attachments: []string{"data/dataset.txt", "data/rems.txt", "data/policy.txt"},
@@ -81,21 +85,28 @@ func (mail *Mail) send(subject string, message string, reciever string, attachem
 	}
 
 	d := gomail.NewDialer(mail.SMTPHost, mail.SMTPport, mail.Email, mail.Password)
+	fmt.Printf("[Mail] Notified <%s> about dataset completion\n", reciever)
 	return d.DialAndSend(m)
 }
 
-func (mail *Mail) Notify(notifier string) error {
+func (mail *Mail) Notify(notifier string, dryRun bool) error {
 	htmlBody, err := renderTemplate(mail.Lookup[notifier].Template, mail.Data)
 	if err != nil {
 		return fmt.Errorf("Failed to render mail template: %v", err)
 	}
 
-	err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Email, mail.Lookup[notifier].Attachments)
+	if dryRun{
+		fmt.Printf("[Mail] Using <%s> instead of <%s> during dryrun\n", mail.Email, mail.Lookup[notifier].Email)
+		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Email, mail.Lookup[notifier].Attachments)
+	}
+
+	if !dryRun{
+		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Lookup[notifier].Email, mail.Lookup[notifier].Attachments)
+	}
 	if err != nil {
 		return fmt.Errorf("Failed to send mail notification %v", err)
 	}
 
-	fmt.Printf("[Mail] Notified %s about dataset completeion\n", notifier)
 	return nil
 }
 

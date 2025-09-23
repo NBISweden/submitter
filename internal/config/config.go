@@ -12,6 +12,7 @@ import (
 type Config struct {
 	UserID        string `yaml:"UserID"`
 	Uploader      string `yaml:"Uploader"`
+	UploaderEmail string `yaml:"UploaderEmail"`
 	DatasetID     string `yaml:"DatasetID"`
 	DatasetFolder string `yaml:"DatasetFolder"`
 	Email         string `yaml:"Email"`
