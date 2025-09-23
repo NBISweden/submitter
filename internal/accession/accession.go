@@ -30,6 +30,7 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 	}
 	defer file.Close()
 
+	fmt.Println("[Accession] Waiting on response from sda api ...")
 	response, err := client.GetUsersFiles()
 	if err != nil {
 		return err
@@ -55,7 +56,7 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 		}
 	}
 
-	fmt.Printf("\n[Accession] Files found for accession id creation: %d\n", len(paths))
+	fmt.Printf("[Accession] Files found for accession id creation: %d\n", len(paths))
 
 	if dryRun {
 		fmt.Println("[Dry-Run] No files will not be given accession ids")
@@ -79,10 +80,14 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 			return err
 		}
 
-		_, err = client.PostFileAccession(payload)
+		resp, err := client.PostFileAccession(payload)
 		if err != nil {
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				continue
+			}
 			return err
 		}
+		defer resp.Body.Close()
 
 		if _, err := file.WriteString(accessionID + "\n"); err != nil {
 			return err
@@ -95,9 +100,10 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 }
 
 func GetVerifiedFilePaths(client *sdaclient.Client) ([]string, error) {
+	fmt.Println("[Accession] Waiting on response from sda api ...")
 	response, err := client.GetUsersFiles()
 	if err != nil {
-		return nil, fmt.Errorf("[Accession] Failed to fetch user files %w", err)
+		return nil, err
 	}
 	defer response.Body.Close()
 

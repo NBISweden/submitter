@@ -71,12 +71,16 @@ func CreateDataset(client *sdaclient.Client, dryRun bool) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("[Dataset] Sending payload:\n%s\n", string(jsonData))
-		r, err := client.PostDatasetCreate(jsonData)
+
+		resp, err := client.PostDatasetCreate(jsonData)
 		if err != nil {
-			return err
+			// Se comment bellow in sendInChunks() why this might be needed
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+			} else {
+				return err
+			}
 		}
-		fmt.Printf("[Dataset] Response from SDA API: %s\n", r.Status)
+		defer resp.Body.Close()
 	}
 
 	fmt.Println("[Dataset] creation of dataset completed!")
@@ -100,13 +104,20 @@ func sendInChunks(fileIDsList []string, client *sdaclient.Client) error {
 		if err != nil {
 			return err
 		}
-		r, err := client.PostDatasetCreate(jsonData)
+		resp, err := client.PostDatasetCreate(jsonData)
+		/*
+			As of 2025-09-17 we can get theese EOF responses when sending the accession id request to the sda api.
+			However the request can still have been processed on the server side, but we won't get a response back in return.
+			Therefore we still want to continue and send the rest of the batches. Unsure what causes this behaviour. It is not reproducable when
+			running the sda stack locally. Probably something in the network setup that we need to figure out. For now we can live with it.
+		*/
 		if err != nil {
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				continue
+			}
 			return err
 		}
-		if r.StatusCode != 200 {
-			fmt.Printf("[Dataset] bad response from SDA API %s for %s", r.Status, chunk)
-		}
+		defer resp.Body.Close()
 	}
 	return nil
 }
@@ -125,6 +136,7 @@ func createStableIDsFile(client *sdaclient.Client) error {
 	}
 	defer file.Close()
 
+	fmt.Println("[Dataset] Waiting on response from sda api ...")
 	r, err := client.GetUsersFilesWithPrefix()
 	if err != nil {
 		return err
