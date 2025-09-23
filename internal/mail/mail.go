@@ -95,12 +95,12 @@ func (mail *Mail) Notify(notifier string, dryRun bool) error {
 		return fmt.Errorf("Failed to render mail template: %v", err)
 	}
 
-	if dryRun{
+	if dryRun {
 		fmt.Printf("[Mail] Using <%s> instead of <%s> during dryrun\n", mail.Email, mail.Lookup[notifier].Email)
 		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Email, mail.Lookup[notifier].Attachments)
 	}
 
-	if !dryRun{
+	if !dryRun {
 		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Lookup[notifier].Email, mail.Lookup[notifier].Attachments)
 	}
 	if err != nil {
