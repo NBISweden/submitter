@@ -17,6 +17,7 @@ type File struct {
 
 func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) (int, error) {
 
+	fmt.Println("[Ingest] Waiting on response from sda api ...")
 	response, err := sdaclient.GetUsersFiles()
 	if err != nil {
 		return 0, err
@@ -48,7 +49,7 @@ func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) (int, error) {
 	}
 
 	filesCount := len(fileList)
-	fmt.Printf("[Ingest] Number of files to ingest : %d\n", filesCount)
+	fmt.Printf("[Ingest] Number of files to ingest: %d\n", filesCount)
 	if dryRun {
 		fmt.Println("[Dry-Run] Files will not be ingested")
 		return filesCount, nil

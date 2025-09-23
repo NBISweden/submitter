@@ -55,8 +55,8 @@ func Configure(c *config.Config) *Mail {
 				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
 				Attachments: []string{"data/dataset.txt", "data/policy.txt"},
 			},
-			"Jarno": {
-				Template:    "internal/mail/templates/notify-jarno.html",
+			"Minttu": {
+				Template:    "internal/mail/templates/notify-minttu.html",
 				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
 				Attachments: []string{"data/dataset.txt", "data/rems.txt", "data/policy.txt"},
 			},
