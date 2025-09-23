@@ -74,7 +74,7 @@ func createDataset(client *sdaclient.Client, dryRun bool) error {
 func sendMail(conf *config.Config) error {
 	m := mail.Configure(conf)
 
-	for _, recipient := range []string{"BigPicture", "Jarno", "Submitter"} {
+	for _, recipient := range []string{"BigPicture", "Minttu", "Submitter"} {
 		if err := m.Notify(recipient); err != nil {
 			return fmt.Errorf("failed to notify %s: %w", recipient, err)
 		}

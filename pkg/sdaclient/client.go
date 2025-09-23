@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-
-	"github.com/schollz/progressbar/v3"
 )
 
 type Client struct {
@@ -61,18 +59,11 @@ func (c *Client) PostDatasetCreate(payload []byte) (*http.Response, error) {
 }
 
 func (c *Client) doRequest(method, path string, body []byte) (*http.Response, error) {
-	bar := progressbar.NewOptions(-1,
-		progressbar.OptionSetDescription("Waiting on response from the SDA API"),
-		progressbar.OptionSetRenderBlankState(true),
-		// See https://github.com/schollz/progressbar/blob/main/spinners.go for all int -> spinner mappings
-		progressbar.OptionSpinnerType(70),
-	)
 	url := fmt.Sprintf("%s/%s", c.APIHost, path)
 	req, err := http.NewRequest(method, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("creating %s request to %s: %w", method, url, err)
+		return nil, err
 	}
-	bar.Add(1)
 
 	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
 	if body != nil {
@@ -81,7 +72,7 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("executing %s request to %s: %w", method, url, err)
+		return nil, err
 	}
 
 	return resp, nil
