@@ -50,7 +50,7 @@ func runCommand(cmd helpers.Command, client *sdaclient.Client, conf *config.Conf
 	case helpers.Dataset:
 		return createDataset(client, dryRun)
 	case helpers.Mail:
-		return sendMail(conf)
+		return sendMail(conf, dryRun)
 	case helpers.All:
 		return runAll(client, conf, dryRun)
 	default:
@@ -71,11 +71,11 @@ func createDataset(client *sdaclient.Client, dryRun bool) error {
 	return dataset.CreateDataset(client, dryRun)
 }
 
-func sendMail(conf *config.Config) error {
+func sendMail(conf *config.Config, dryRun bool) error {
 	m := mail.Configure(conf)
 
 	for _, recipient := range []string{"BigPicture", "Minttu", "Submitter"} {
-		if err := m.Notify(recipient); err != nil {
+		if err := m.Notify(recipient, dryRun); err != nil {
 			return fmt.Errorf("failed to notify %s: %w", recipient, err)
 		}
 	}
@@ -84,7 +84,7 @@ func sendMail(conf *config.Config) error {
 
 func runAll(client *sdaclient.Client, conf *config.Config, dryRun bool) error {
 	if dryRun {
-		fmt.Println("dry run true enabled, exiting...")
+		fmt.Println("[Submitter] DryRun for 'all'. Exiting without any operations")
 		return nil
 	}
 	filesCount, err := ingest.IngestFiles(client, false)

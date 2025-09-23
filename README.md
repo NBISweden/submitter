@@ -40,8 +40,9 @@ Running ingestion:
 To run submitter a configuration file is needed with proper input, example: 
 
 ```yaml
-Uploader: John Doe
 UserID: testu@lifescience-ri.eu
+Uploader: John Doe
+UploaderEmail: johndoe@email.com
 DatasetID: aa-Dataset-benchmark-1k
 DatasetFolder: DATASET_BENCHMARK_1K
 Email: myemail@nbis.se
