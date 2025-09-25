@@ -55,13 +55,13 @@ func Configure(c *config.Config) *Mail {
 			"BigPicture": {
 				Email:       "submit@bigpicture.eu",
 				Template:    "internal/mail/templates/notify-bigpicture.html",
-				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
+				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetID),
 				Attachments: []string{"data/dataset.txt", "data/policy.txt"},
 			},
 			"Minttu": {
 				Email:       "minttu.sauramo@hus.fi",
 				Template:    "internal/mail/templates/notify-minttu.html",
-				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
+				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetID),
 				Attachments: []string{"data/dataset.txt", "data/rems.txt", "data/policy.txt"},
 			},
 		},
