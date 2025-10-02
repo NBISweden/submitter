@@ -28,6 +28,7 @@ type TemplateData struct {
 
 type Notifiers struct {
 	Email       string
+	CC          []string
 	Template    string
 	Subject     string
 	Attachments []string
@@ -60,6 +61,7 @@ func Configure(c *config.Config) *Mail {
 			},
 			"Minttu": {
 				Email:       "minttu.sauramo@hus.fi",
+				CC:          []string{"jarno.laitinen@csc.fi"},
 				Template:    "internal/mail/templates/notify-minttu.html",
 				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
 				Attachments: []string{"data/dataset.txt", "data/rems.txt", "data/policy.txt"},
@@ -69,11 +71,20 @@ func Configure(c *config.Config) *Mail {
 	return m
 }
 
-func (mail *Mail) send(subject string, message string, reciever string, attachements []string) error {
+func (mail *Mail) send(subject string, message string, reciever string, attachements []string, ccs []string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", mail.From)
 	m.SetHeader("To", reciever)
 	m.SetHeader("Subject", subject)
+
+	if len(ccs) > 0 {
+		addresses := make([]string, 0, len(ccs))
+		for _, email := range ccs {
+			addresses = append(addresses, m.FormatAddress(email, ""))
+		}
+		m.SetHeader("Cc", addresses...)
+	}
+
 	m.SetBody("text/html", message)
 
 	// Enforce that the wanted attachements are files that exists
@@ -97,11 +108,11 @@ func (mail *Mail) Notify(notifier string, dryRun bool) error {
 
 	if dryRun {
 		fmt.Printf("[Mail] Using <%s> instead of <%s> during dryrun\n", mail.Email, mail.Lookup[notifier].Email)
-		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Email, mail.Lookup[notifier].Attachments)
+		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Email, mail.Lookup[notifier].Attachments, nil) // no cc on dry run
 	}
 
 	if !dryRun {
-		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Lookup[notifier].Email, mail.Lookup[notifier].Attachments)
+		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Lookup[notifier].Email, mail.Lookup[notifier].Attachments, mail.Lookup[notifier].CC)
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to send mail notification %v", err)
