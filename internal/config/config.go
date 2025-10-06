@@ -31,7 +31,7 @@ func NewConfig(configFilePath string) (*Config, error) {
 	var c Config
 	err = yaml.Unmarshal(file, &c)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to parse configuration %v", err)
+		return nil, fmt.Errorf("[config] unable to parse configuration %v", err)
 	}
 	return &c, nil
 }
@@ -41,7 +41,7 @@ func (c *Config) GetAccessToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -63,5 +63,5 @@ func (c *Config) GetAccessToken() (string, error) {
 	if err := scanner.Err(); err != nil {
 		return "", nil
 	}
-	return "", fmt.Errorf("access_token not found in %s", c.S3Config)
+	return "", fmt.Errorf("[config] access_token not found in %s", c.S3Config)
 }

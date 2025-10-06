@@ -11,6 +11,34 @@ import (
 	"github.com/NBISweden/submitter/pkg/sdaclient"
 )
 
+func TestIngestFiles_Resend(t *testing.T) {
+	files := []File{
+		{InboxPath: "dataset1/file1.txt", FileStatus: "uploaded"},
+		{InboxPath: "dataset1/file2.txt", FileStatus: "uploaded"},
+		{InboxPath: "dataset1/file3.txt", FileStatus: "uploaded"},
+	}
+	filesJSON, _ := json.Marshal(files)
+
+	var postRequests []string
+
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/users/") && r.Method == http.MethodGet {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write(filesJSON) //nolint:errcheck
+			return
+		}
+		if r.URL.Path == "/file/ingest" && r.Method == http.MethodPost {
+			body, _ := io.ReadAll(r.Body)
+			postRequests = append(postRequests, string(body))
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer mockServer.Close()
+}
+
 func TestIngestFiles_HappyPath(t *testing.T) {
 	// Mock files response (mix of uploaded and non-uploaded)
 	files := []File{
@@ -28,7 +56,7 @@ func TestIngestFiles_HappyPath(t *testing.T) {
 		if strings.HasPrefix(r.URL.Path, "/users/") && r.Method == http.MethodGet {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write(filesJSON)
+			w.Write(filesJSON) //nolint:errcheck
 			return
 		}
 		if r.URL.Path == "/file/ingest" && r.Method == http.MethodPost {
