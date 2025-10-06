@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	// "time"
 
 	"github.com/NBISweden/submitter/pkg/sdaclient"
 	"github.com/schollz/progressbar/v3"
