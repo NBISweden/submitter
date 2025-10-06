@@ -14,7 +14,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-var ErrFileAlreadyExists = errors.New("File already exists")
+var ErrFileAlreadyExists = errors.New("file already exists")
 
 type File struct {
 	InboxPath  string `json:"inboxPath"`
@@ -25,17 +25,17 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 	filePath := fmt.Sprintf("data/%s-fileIDs.txt", client.DatasetFolder)
 	file, err := createFileIDFile(filePath, dryRun)
 	if err != nil {
-		fmt.Printf("Error occoured when trying to create file: %s\n", filePath)
+		fmt.Printf("error occoured when trying to create file: %s\n", filePath)
 		return err
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
-	fmt.Println("[Accession] Waiting on response from sda api ...")
+	fmt.Println("[accession] waiting on response from sda api ...")
 	response, err := client.GetUsersFiles()
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -56,16 +56,16 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 		}
 	}
 
-	fmt.Printf("[Accession] Files found for accession id creation: %d\n", len(paths))
+	fmt.Printf("[accession] files found for accession id creation: %d\n", len(paths))
 
 	if dryRun {
-		fmt.Println("[Dry-Run] No files will not be given accession ids")
+		fmt.Println("[dry-run] no files will not be given accession ids")
 		return nil
 	}
 
-	bar := progressbar.Default(int64(len(paths)), "[Accession] Creating accession ids")
+	bar := progressbar.Default(int64(len(paths)), "[accession] creating accession ids")
 	for _, filepath := range paths {
-		bar.Add(1)
+		_ = bar.Add(1)
 		accessionID, err := generateAccessionID()
 		if err != nil {
 			return err
@@ -87,29 +87,29 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 			}
 			return err
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 
 		if _, err := file.WriteString(accessionID + "\n"); err != nil {
 			return err
 		}
 	}
 
-	fmt.Printf("[Accesion] All %d files assigned accession IDs\n", len(paths))
+	fmt.Printf("[accesion] all %d files assigned accession IDs\n", len(paths))
 
 	return nil
 }
 
 func GetVerifiedFilePaths(client *sdaclient.Client) ([]string, error) {
-	fmt.Println("[Accession] Waiting on response from sda api ...")
+	fmt.Println("[accession] waiting on response from sda api ...")
 	response, err := client.GetUsersFiles()
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("[Accession] Failed to read response body %w", err)
+		return nil, fmt.Errorf("[accession] failed to read response body %w", err)
 	}
 
 	var files []File

@@ -13,7 +13,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-var ErrFileAlreadyExists = errors.New("File already exists")
+var ErrFileAlreadyExists = errors.New("file already exists")
 
 type Payload struct {
 	AccessionIDs []string `json:"accession_ids"`
@@ -31,7 +31,7 @@ func CreateDataset(client *sdaclient.Client, dryRun bool) error {
 	if !dryRun {
 		err := createStableIDsFile(client)
 		if err != nil {
-			fmt.Println("[Dataset] failed to create file with stable ids")
+			fmt.Println("[dataset] failed to create file with stable ids")
 		}
 	}
 
@@ -41,16 +41,16 @@ func CreateDataset(client *sdaclient.Client, dryRun bool) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
-	fmt.Printf("[Dataset] Reading %s\n", filePath)
+	fmt.Printf("[dataset] reading %s\n", filePath)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		fileIDsList = append(fileIDsList, scanner.Text())
 	}
-	fmt.Println("[Dataset] Number of files included in dataset:", len(fileIDsList))
+	fmt.Println("[dataset] number of files included in dataset:", len(fileIDsList))
 	if dryRun {
-		fmt.Println("[Dry-Run] No datasets will be created")
+		fmt.Println("[dry-run] no datasets will be created")
 		return nil
 	}
 
@@ -80,10 +80,10 @@ func CreateDataset(client *sdaclient.Client, dryRun bool) error {
 				return err
 			}
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 	}
 
-	fmt.Println("[Dataset] creation of dataset completed!")
+	fmt.Println("[dataset] creation of dataset completed!")
 	return nil
 }
 
@@ -92,9 +92,9 @@ func sendInChunks(fileIDsList []string, client *sdaclient.Client) error {
 	chunks := slices.Chunk(fileIDsList, 100)
 	allChunks := slices.Collect(chunks)
 	totalChunks := len(allChunks)
-	bar := progressbar.Default(int64(totalChunks), "[Dataset] Creating dataset")
+	bar := progressbar.Default(int64(totalChunks), "[dataset] creating dataset")
 	for _, chunk := range allChunks {
-		bar.Add(1)
+		_ = bar.Add(1)
 		payload := Payload{
 			AccessionIDs: chunk,
 			DatasetID:    client.DatasetID,
@@ -117,7 +117,7 @@ func sendInChunks(fileIDsList []string, client *sdaclient.Client) error {
 			}
 			return err
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 	}
 	return nil
 }
@@ -134,9 +134,9 @@ func createStableIDsFile(client *sdaclient.Client) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
-	fmt.Println("[Dataset] Waiting on response from sda api ...")
+	fmt.Println("[dataset] waiting on response from sda api ...")
 	r, err := client.GetUsersFilesWithPrefix()
 	if err != nil {
 		return err
@@ -152,9 +152,9 @@ func createStableIDsFile(client *sdaclient.Client) error {
 	}
 
 	for _, f := range stableIDs {
-		fmt.Fprintf(file, "%s %s\n", f.AccessionID, f.InboxPath)
+		fmt.Fprintf(file, "%s %s\n", f.AccessionID, f.InboxPath) //nolint:errcheck
 	}
 
-	fmt.Printf("[Dataset] Created file with stable ids in %s\n", filePath)
+	fmt.Printf("[dataset] created file with stable ids in %s\n", filePath)
 	return nil
 }
