@@ -96,18 +96,18 @@ func (mail *Mail) send(subject string, message string, reciever string, attachem
 	}
 
 	d := gomail.NewDialer(mail.SMTPHost, mail.SMTPport, mail.Email, mail.Password)
-	fmt.Printf("[Mail] Notified <%s> about dataset completion\n", reciever)
+	fmt.Printf("[mail] notified <%s> about dataset completion\n", reciever)
 	return d.DialAndSend(m)
 }
 
 func (mail *Mail) Notify(notifier string, dryRun bool) error {
 	htmlBody, err := renderTemplate(mail.Lookup[notifier].Template, mail.Data)
 	if err != nil {
-		return fmt.Errorf("Failed to render mail template: %v", err)
+		return fmt.Errorf("failed to render mail template: %v", err)
 	}
 
 	if dryRun {
-		fmt.Printf("[Mail] Using <%s> instead of <%s> during dryrun\n", mail.Email, mail.Lookup[notifier].Email)
+		fmt.Printf("[mail] using <%s> instead of <%s> during dryrun\n", mail.Email, mail.Lookup[notifier].Email)
 		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Email, mail.Lookup[notifier].Attachments, nil) // no cc on dry run
 	}
 
@@ -115,7 +115,7 @@ func (mail *Mail) Notify(notifier string, dryRun bool) error {
 		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Lookup[notifier].Email, mail.Lookup[notifier].Attachments, mail.Lookup[notifier].CC)
 	}
 	if err != nil {
-		return fmt.Errorf("Failed to send mail notification %v", err)
+		return fmt.Errorf("failed to send mail notification %v", err)
 	}
 
 	return nil
