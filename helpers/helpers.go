@@ -12,6 +12,7 @@ type Command int
 
 const (
 	Unknown Command = iota
+	Validate
 	Ingest
 	Accession
 	Dataset
@@ -21,6 +22,8 @@ const (
 
 func (c Command) String() string {
 	switch c {
+	case Validate:
+		return "validate"
 	case Ingest:
 		return "ingest"
 	case Accession:
@@ -37,6 +40,7 @@ func (c Command) String() string {
 }
 
 var commandMap = map[string]Command{
+	"validate":  Validate,
 	"ingest":    Ingest,
 	"accession": Accession,
 	"dataset":   Dataset,

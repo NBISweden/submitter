@@ -12,6 +12,7 @@ import (
 	"github.com/NBISweden/submitter/internal/dataset"
 	"github.com/NBISweden/submitter/internal/ingest"
 	"github.com/NBISweden/submitter/internal/mail"
+	"github.com/NBISweden/submitter/internal/validate"
 	"github.com/NBISweden/submitter/pkg/sdaclient"
 )
 
@@ -43,6 +44,8 @@ func main() {
 
 func runCommand(cmd helpers.Command, client *sdaclient.Client, conf *config.Config, dryRun bool) error {
 	switch cmd {
+	case helpers.Validate:
+		return validateSubmission(client, dryRun)
 	case helpers.Ingest:
 		return ingestFiles(client, dryRun)
 	case helpers.Accession:
@@ -56,6 +59,10 @@ func runCommand(cmd helpers.Command, client *sdaclient.Client, conf *config.Conf
 	default:
 		return fmt.Errorf("unknown command: %s", cmd)
 	}
+}
+
+func validateSubmission(client *sdaclient.Client, dryRun bool) error {
+	return validate.ValidateSubmission(client, dryRun)
 }
 
 func ingestFiles(client *sdaclient.Client, dryRun bool) error {
