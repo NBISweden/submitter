@@ -4,23 +4,58 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
-	"github.com/NBISweden/submitter/pkg/sdaclient"
-	"github.com/schollz/progressbar/v3"
+	"github.com/NBISweden/submitter/cmd"
+	"github.com/NBISweden/submitter/internal/client"
+	"github.com/NBISweden/submitter/internal/config"
+	"github.com/spf13/cobra"
 )
+
+var dryRun bool
+
+var ingestCmd = &cobra.Command{
+	Use:   "ingest [flags]",
+	Short: "Trigger ingestion",
+	Long:  "Trigger ingestion",
+	Args: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		conf, err := config.NewConfig()
+		if err != nil {
+			return err
+		}
+		sdaclient := client.NewClient(*conf)
+		_, err = IngestFiles(sdaclient, dryRun)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	},
+}
+
+func init() {
+	cmd.AddCommand(ingestCmd)
+	ingestCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
+}
 
 type File struct {
 	InboxPath  string `json:"inboxPath"`
 	FileStatus string `json:"fileStatus"`
 }
 
-func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) (int, error) {
-
-	fmt.Println("[ingest] waiting on response from sda api ...")
+func IngestFiles(sdaclient *client.Client, dryRun bool) (int, error) {
 	response, err := sdaclient.GetUsersFiles()
 	if err != nil {
+		slog.Error("[ingest] error when getting user files from sdaclient", "err", err)
+		return 0, err
+	}
+	if response.StatusCode != http.StatusOK {
+		slog.Error("[ingest] got non-ok response from sda api", "status_code", response.StatusCode)
 		return 0, err
 	}
 	defer response.Body.Close() //nolint:errcheck
@@ -50,9 +85,9 @@ func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) (int, error) {
 	}
 
 	filesCount := len(fileList)
-	fmt.Printf("[ingest] number of files to ingest: %d\n", filesCount)
+	slog.Info("[ingest] number of files to ingest", "filesCount", filesCount)
 	if dryRun {
-		fmt.Println("[dry-run] files will not be ingested")
+		slog.Info("[ingest] dry-run enabled. No files will be ingested")
 		return filesCount, nil
 	}
 
@@ -60,9 +95,7 @@ func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) (int, error) {
 	var nonOKResponds []int
 	var okResponds []int
 
-	bar := progressbar.Default(int64(len(fileList)), "[ingest] running ingestion")
 	for _, path := range fileList {
-		_ = bar.Add(1)
 		payload := map[string]string{
 			"filepath": path,
 			"user":     sdaclient.UserID,
@@ -84,21 +117,21 @@ func IngestFiles(sdaclient *sdaclient.Client, dryRun bool) (int, error) {
 		}
 
 		io.Copy(io.Discard, response.Body) //nolint:errcheck
-		response.Body.Close() //nolint:errcheck
+		response.Body.Close()              //nolint:errcheck
 	}
 
 	if len(resendPayloads) != 0 {
-		fmt.Printf("[ingest] warning! Found %d non-ok responds from SDA api\n", len(resendPayloads))
+		slog.Warn("[ingest] found non-ok responds from SDA API", "non-oks", len(resendPayloads))
 		countResponds := make(map[int]int)
 		for _, code := range nonOKResponds {
 			countResponds[code]++
 		}
 
 		for code, count := range countResponds {
-			fmt.Printf("[ingest] found: %d with status: %d\n", count, code)
+			slog.Info("[ingest] non-ok responds", "count", count, "code", code)
 		}
 	}
 
-	fmt.Printf("[ingest] started ingest queue for %d files\n", len(okResponds))
+	slog.Info(fmt.Sprintf("[ingest] starting ingestion for %d/%d successful responses", len(okResponds), filesCount))
 	return filesCount, nil
 }

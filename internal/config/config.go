@@ -1,67 +1,43 @@
 package config
 
 import (
-	"bufio"
-	"fmt"
-	"os"
-	"strings"
-
-	"gopkg.in/yaml.v3"
+	"github.com/spf13/viper"
 )
 
 type Config struct {
-	UserID        string `yaml:"UserID"`
-	Uploader      string `yaml:"Uploader"`
-	UploaderEmail string `yaml:"UploaderEmail"`
-	DatasetID     string `yaml:"DatasetID"`
-	DatasetFolder string `yaml:"DatasetFolder"`
-	Email         string `yaml:"Email"`
-	Password      string `yaml:"Password"`
-	APIHost       string `yaml:"APIHost"`
-	SMTPHost      string `yaml:"SMTPHost"`
-	SMTPPort      int    `yaml:"SMTPPort"`
-	S3Config      string `yaml:"S3Config"`
+	UserID        string
+	Uploader      string
+	UploaderEmail string
+	DatasetID     string
+	DatasetFolder string
+	Email         string
+	Password      string
+	APIHost       string
+	SMTPHost      string
+	SMTPPort      int
+	AccessToken   string
+	UseTLS        bool
+	SSLCACert     string
 }
 
-func NewConfig(configFilePath string) (*Config, error) {
-	file, err := os.ReadFile(configFilePath)
-	if err != nil {
-		return nil, err
+func NewConfig() (*Config, error) {
+	v := viper.New()
+	v.AutomaticEnv()
+	cfg := &Config{
+		UserID:        v.GetString("USER_ID"),
+		Uploader:      v.GetString("UPLOADER"),
+		UploaderEmail: v.GetString("UPLOADER_EMAIL"),
+		DatasetID:     v.GetString("DATASET_ID"),
+		DatasetFolder: v.GetString("DATASET_FOLDER"),
+		Email:         v.GetString("EMAIL"),
+		Password:      v.GetString("PASSWORD"),
+		APIHost:       v.GetString("API_HOST"),
+		SMTPHost:      v.GetString("SMTP_HOST"),
+		SMTPPort:      v.GetInt("SMTP_PORT"),
+		AccessToken:   v.GetString("ACCESS_TOKEN"),
+		UseTLS:        v.GetBool("USE_TLS"),
+		SSLCACert:     v.GetString("SSL_CA_CERT"),
 	}
-	var c Config
-	err = yaml.Unmarshal(file, &c)
-	if err != nil {
-		return nil, fmt.Errorf("[config] unable to parse configuration %v", err)
-	}
-	return &c, nil
-}
 
-func (c *Config) GetAccessToken() (string, error) {
-	file, err := os.Open(c.S3Config)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close() //nolint:errcheck
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-		if key == "access_token" {
-			return value, nil
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return "", nil
-	}
-	return "", fmt.Errorf("[config] access_token not found in %s", c.S3Config)
+	return cfg, nil
 }

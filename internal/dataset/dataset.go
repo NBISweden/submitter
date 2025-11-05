@@ -6,12 +6,45 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
+	"net/http"
 	"os"
 	"slices"
 
-	"github.com/NBISweden/submitter/pkg/sdaclient"
-	"github.com/schollz/progressbar/v3"
+	"github.com/NBISweden/submitter/cmd"
+	"github.com/NBISweden/submitter/internal/client"
+	"github.com/NBISweden/submitter/internal/config"
+	"github.com/spf13/cobra"
 )
+
+var dryRun bool
+
+var accessionCmd = &cobra.Command{
+	Use:   "dataset [flags]",
+	Short: "Trigger dataset creation",
+	Long:  "Trigger dataset creation",
+	Args: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		conf, err := config.NewConfig()
+		if err != nil {
+			return err
+		}
+		sdaclient := client.NewClient(*conf)
+		err = CreateDataset(sdaclient, dryRun)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	},
+}
+
+func init() {
+	cmd.AddCommand(accessionCmd)
+	accessionCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
+}
 
 var ErrFileAlreadyExists = errors.New("file already exists")
 
@@ -21,41 +54,40 @@ type Payload struct {
 	User         string   `json:"user"`
 }
 
-// TODO: Unify the naming here. Stable ID and Accession ID is interchanged?
-type StableID struct {
+type UserFiles struct {
 	AccessionID string `json:"accessionID"`
 	InboxPath   string `json:"inboxPath"`
 }
 
-func CreateDataset(client *sdaclient.Client, dryRun bool) error {
+func CreateDataset(sdaclient *client.Client, dryRun bool) error {
 	if !dryRun {
-		err := createStableIDsFile(client)
+		err := createStableIDsFile(sdaclient)
 		if err != nil {
-			fmt.Println("[dataset] failed to create file with stable ids")
+			slog.Error("[dataset] failed to create file with stable ids")
 		}
 	}
 
 	var fileIDsList []string
-	filePath := fmt.Sprintf("data/%s-fileIDs.txt", client.DatasetFolder)
+	filePath := fmt.Sprintf("/data/%s-fileIDs.txt", sdaclient.DatasetFolder)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
 	defer file.Close() //nolint:errcheck
 
-	fmt.Printf("[dataset] reading %s\n", filePath)
+	slog.Info("[dataset] reading", "filePath", filePath)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		fileIDsList = append(fileIDsList, scanner.Text())
 	}
-	fmt.Println("[dataset] number of files included in dataset:", len(fileIDsList))
+	slog.Info("[dataset] nr of files included in dataset", "nr_files", (len(fileIDsList)))
 	if dryRun {
-		fmt.Println("[dry-run] no datasets will be created")
+		slog.Info("[dataset] dry-run enabled, no dataset will be created")
 		return nil
 	}
 
 	if len(fileIDsList) > 100 {
-		err := sendInChunks(fileIDsList, client)
+		err := sendInChunks(fileIDsList, sdaclient)
 		if err != nil {
 			return err
 		}
@@ -64,15 +96,15 @@ func CreateDataset(client *sdaclient.Client, dryRun bool) error {
 	if len(fileIDsList) <= 100 {
 		payload := Payload{
 			AccessionIDs: fileIDsList,
-			DatasetID:    client.DatasetID,
-			User:         client.UserID,
+			DatasetID:    sdaclient.DatasetID,
+			User:         sdaclient.UserID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
 			return err
 		}
 
-		resp, err := client.PostDatasetCreate(jsonData)
+		response, err := sdaclient.PostDatasetCreate(jsonData)
 		if err != nil {
 			// Se comment bellow in sendInChunks() why this might be needed
 			if errors.Is(err, io.ErrUnexpectedEOF) {
@@ -80,36 +112,33 @@ func CreateDataset(client *sdaclient.Client, dryRun bool) error {
 				return err
 			}
 		}
-		defer resp.Body.Close() //nolint:errcheck
+		if response.StatusCode != http.StatusOK {
+			slog.Warn("[dataset] got non-ok response", "status_code", response.StatusCode)
+		}
+		defer response.Body.Close() //nolint:errcheck
 	}
 
-	fmt.Println("[dataset] creation of dataset completed!")
+	slog.Info("[dataset] creation of dataset completed!")
 	return nil
 }
 
-func sendInChunks(fileIDsList []string, client *sdaclient.Client) error {
-	fmt.Println("[Dataset] More than 100 entries. Sending in chunks of 100")
+func sendInChunks(fileIDsList []string, sdaclient *client.Client) error {
+	slog.Info("[dataset] more than 100 entries, sending in chunks of 100")
 	chunks := slices.Chunk(fileIDsList, 100)
 	allChunks := slices.Collect(chunks)
-	totalChunks := len(allChunks)
-	bar := progressbar.Default(int64(totalChunks), "[dataset] creating dataset")
 	for _, chunk := range allChunks {
-		_ = bar.Add(1)
 		payload := Payload{
 			AccessionIDs: chunk,
-			DatasetID:    client.DatasetID,
-			User:         client.UserID,
+			DatasetID:    sdaclient.DatasetID,
+			User:         sdaclient.UserID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
 			return err
 		}
-		resp, err := client.PostDatasetCreate(jsonData)
+		response, err := sdaclient.PostDatasetCreate(jsonData)
 		/*
-			As of 2025-09-17 we can get theese EOF responses when sending the accession id request to the sda api.
-			However the request can still have been processed on the server side, but we won't get a response back in return.
-			Therefore we still want to continue and send the rest of the batches. Unsure what causes this behaviour. It is not reproducable when
-			running the sda stack locally. Probably something in the network setup that we need to figure out. For now we can live with it.
+			As of 2025-09-17 we can get EOF responses when sending the accession id request to the sda api, however the request will still have been processed on the server side, but we won't get a response back since the TCP connection will be terminated.
 		*/
 		if err != nil {
 			if errors.Is(err, io.ErrUnexpectedEOF) {
@@ -117,13 +146,16 @@ func sendInChunks(fileIDsList []string, client *sdaclient.Client) error {
 			}
 			return err
 		}
-		defer resp.Body.Close() //nolint:errcheck
+		if response.StatusCode != http.StatusOK {
+			slog.Warn("[dataset] got non-ok response", "status_code", response.StatusCode)
+		}
+		defer response.Body.Close() //nolint:errcheck
 	}
 	return nil
 }
 
-func createStableIDsFile(client *sdaclient.Client) error {
-	filePath := fmt.Sprintf("data/%s-stableIDs.txt", client.DatasetFolder)
+func createStableIDsFile(sdaclient *client.Client) error {
+	filePath := fmt.Sprintf("/data/%s-stableIDs.txt", sdaclient.DatasetFolder)
 	if _, err := os.Stat(filePath); err == nil {
 		return ErrFileAlreadyExists
 	} else if !os.IsNotExist(err) {
@@ -136,8 +168,7 @@ func createStableIDsFile(client *sdaclient.Client) error {
 	}
 	defer file.Close() //nolint:errcheck
 
-	fmt.Println("[dataset] waiting on response from sda api ...")
-	r, err := client.GetUsersFilesWithPrefix()
+	r, err := sdaclient.GetUsersFilesWithPrefix()
 	if err != nil {
 		return err
 	}
@@ -146,7 +177,7 @@ func createStableIDsFile(client *sdaclient.Client) error {
 		return err
 	}
 
-	var stableIDs []StableID
+	var stableIDs []UserFiles
 	if err := json.Unmarshal(body, &stableIDs); err != nil {
 		return err
 	}
@@ -155,6 +186,6 @@ func createStableIDsFile(client *sdaclient.Client) error {
 		fmt.Fprintf(file, "%s %s\n", f.AccessionID, f.InboxPath) //nolint:errcheck
 	}
 
-	fmt.Printf("[dataset] created file with stable ids in %s\n", filePath)
+	slog.Info("[dataset] created file with stable ids", "filePath", filePath)
 	return nil
 }

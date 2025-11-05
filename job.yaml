@@ -1,0 +1,65 @@
+# job manifest boilerplate, you can use this and populate the empty fields
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name:
+  labels:
+    release: pipeline
+spec:
+  template:
+    metadata:
+      labels:
+        release: pipeline
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: submitter
+          image: harbor.nbis.se/sda/submitter:latest
+          imagePullPolicy: Always
+          args: ["job"]
+          env:
+            - name: USER_ID
+              value:
+            - name: UPLOADER
+              value:
+            - name: UPLOADER_EMAIL
+              value:
+            - name: DATASET_ID
+              value:
+            - name: DATASET_FOLDER
+              value:
+            - name: EMAIL
+              value:
+            - name: PASSWORD
+              value:
+            - name: API_HOST
+              value:
+            - name: SMTP_HOST
+              value:
+            - name: SMTP_PORT
+              value:
+            - name: ACCESS_TOKEN 
+              value:
+            - name: USE_TLS
+              value: true
+            - name: SSL_CA_Cert
+              value: /.secrets/tls/ca.crt
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65534
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+            - mountPath: /.secrets/tls/
+              name: tls
+      volumes:
+        - name: data-volume
+          emptyDir: {}
+        - name: tls
+          secret:
+            secretName: pipeline-sda-svc-api-certs
