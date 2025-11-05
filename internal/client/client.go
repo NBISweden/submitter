@@ -1,10 +1,16 @@
-package sdaclient
+package client
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
+
+	"github.com/NBISweden/submitter/internal/config"
 )
 
 type Client struct {
@@ -16,14 +22,34 @@ type Client struct {
 	HTTPClient    *http.Client
 }
 
-func NewClient(token string, apiHost string, userID string, datasetFolder string, datasetID string) *Client {
+func NewClient(conf config.Config) *Client {
+	var httpClient *http.Client
+	httpClient = http.DefaultClient
+	if conf.UseTLS {
+		caCert, err := os.ReadFile(conf.SSLCACert)
+		if err != nil {
+			slog.Error("error", "err", err)
+			return nil
+		}
+
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
+		}
+		httpClient = &http.Client{Transport: tr}
+	}
+
 	return &Client{
-		AccessToken:   token,
-		APIHost:       apiHost,
-		UserID:        userID,
-		DatasetFolder: datasetFolder,
-		DatasetID:     datasetID,
-		HTTPClient:    http.DefaultClient,
+		AccessToken:   conf.AccessToken,
+		APIHost:       conf.APIHost,
+		UserID:        conf.UserID,
+		DatasetFolder: conf.DatasetFolder,
+		DatasetID:     conf.DatasetID,
+		HTTPClient:    httpClient,
 	}
 }
 
@@ -61,6 +87,7 @@ func (c *Client) PostDatasetCreate(payload []byte) (*http.Response, error) {
 func (c *Client) doRequest(method, path string, body []byte) (*http.Response, error) {
 	url := fmt.Sprintf("%s/%s", c.APIHost, path)
 	req, err := http.NewRequest(method, url, bytes.NewReader(body))
+	slog.Info("calling", "method", method, "url", url)
 	if err != nil {
 		return nil, err
 	}
@@ -75,5 +102,6 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 		return nil, err
 	}
 
+	slog.Info("Response", "status", resp.Status)
 	return resp, nil
 }

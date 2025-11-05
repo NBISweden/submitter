@@ -6,13 +6,46 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"math/big"
+	"net/http"
 	"os"
 	"strings"
 
-	"github.com/NBISweden/submitter/pkg/sdaclient"
-	"github.com/schollz/progressbar/v3"
+	"github.com/NBISweden/submitter/cmd"
+	"github.com/NBISweden/submitter/internal/client"
+	"github.com/NBISweden/submitter/internal/config"
+	"github.com/spf13/cobra"
 )
+
+var dryRun bool
+
+var accessionCmd = &cobra.Command{
+	Use:   "accession [flags]",
+	Short: "Trigger accession",
+	Long:  "Trigger accession",
+	Args: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		conf, err := config.NewConfig()
+		if err != nil {
+			return err
+		}
+		sdaclient := client.NewClient(*conf)
+		err = CreateAccessionIDs(sdaclient, dryRun)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	},
+}
+
+func init() {
+	cmd.AddCommand(accessionCmd)
+	accessionCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
+}
 
 var ErrFileAlreadyExists = errors.New("file already exists")
 
@@ -21,18 +54,22 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
-	filePath := fmt.Sprintf("data/%s-fileIDs.txt", client.DatasetFolder)
+func CreateAccessionIDs(sdaclient *client.Client, dryRun bool) error {
+	filePath := fmt.Sprintf("/data/%s-fileIDs.txt", sdaclient.DatasetFolder)
 	file, err := createFileIDFile(filePath, dryRun)
 	if err != nil {
-		fmt.Printf("error occoured when trying to create file: %s\n", filePath)
+		slog.Error("[accession] error occoured when trying to create file", "filePath", filePath)
 		return err
 	}
 	defer file.Close() //nolint:errcheck
 
-	fmt.Println("[accession] waiting on response from sda api ...")
-	response, err := client.GetUsersFiles()
+	response, err := sdaclient.GetUsersFiles()
 	if err != nil {
+		slog.Error("[accession] error when getting user files from sdaclient", "err", err)
+		return err
+	}
+	if response.StatusCode != http.StatusOK {
+		slog.Error("[accession] got non-ok response from sda api", "status_code", response.StatusCode)
 		return err
 	}
 	defer response.Body.Close() //nolint:errcheck
@@ -50,22 +87,19 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 	var paths []string
 	for _, f := range files {
 		if f.FileStatus == "verified" &&
-			strings.Contains(f.InboxPath, client.DatasetFolder) &&
+			strings.Contains(f.InboxPath, sdaclient.DatasetFolder) &&
 			!strings.Contains(f.InboxPath, "PRIVATE") {
 			paths = append(paths, f.InboxPath)
 		}
 	}
-
-	fmt.Printf("[accession] files found for accession id creation: %d\n", len(paths))
+	slog.Info("[accession] files found for accession id creation", "files_found", len(paths))
 
 	if dryRun {
-		fmt.Println("[dry-run] no files will not be given accession ids")
+		slog.Info("[accession] dry-run enabled, no files will be given accession ids")
 		return nil
 	}
 
-	bar := progressbar.Default(int64(len(paths)), "[accession] creating accession ids")
 	for _, filepath := range paths {
-		_ = bar.Add(1)
 		accessionID, err := generateAccessionID()
 		if err != nil {
 			return err
@@ -74,13 +108,13 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 		payload, err := json.Marshal(map[string]string{
 			"accession_id": accessionID,
 			"filepath":     filepath,
-			"user":         client.UserID,
+			"user":         sdaclient.UserID,
 		})
 		if err != nil {
 			return err
 		}
 
-		resp, err := client.PostFileAccession(payload)
+		resp, err := sdaclient.PostFileAccession(payload)
 		if err != nil {
 			if errors.Is(err, io.ErrUnexpectedEOF) {
 				continue
@@ -94,13 +128,12 @@ func CreateAccessionIDs(client *sdaclient.Client, dryRun bool) error {
 		}
 	}
 
-	fmt.Printf("[accesion] all %d files assigned accession IDs\n", len(paths))
+	slog.Info("[accession] accession IDs assigned", "nr_files", len(paths))
 
 	return nil
 }
 
-func GetVerifiedFilePaths(client *sdaclient.Client) ([]string, error) {
-	fmt.Println("[accession] waiting on response from sda api ...")
+func GetVerifiedFilePaths(client *client.Client) ([]string, error) {
 	response, err := client.GetUsersFiles()
 	if err != nil {
 		return nil, err
