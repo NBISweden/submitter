@@ -23,12 +23,13 @@ type Client struct {
 }
 
 func NewClient(conf config.Config) *Client {
+	slog.Info("setting up new sda client", "UseTLS", conf.UseTLS, "caCert", conf.SSLCACert)
 	var httpClient *http.Client
 	httpClient = http.DefaultClient
 	if conf.UseTLS {
 		caCert, err := os.ReadFile(conf.SSLCACert)
 		if err != nil {
-			slog.Error("error", "err", err)
+			slog.Error("error", "err", err, "file", conf.SSLCACert)
 			return nil
 		}
 
