@@ -37,7 +37,7 @@ func init() {
 }
 
 func runJob(client *client.Client) error {
-	err := ingest.IngestFiles(client, false)
+	filesCount, err := ingest.IngestFiles(client, false)
 	if err != nil {
 		return err
 	}

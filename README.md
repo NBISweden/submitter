@@ -30,14 +30,13 @@ Running ingestion:
 
 ```bash
 ./submitter \
-  -config=/home/user/myconfig.yaml \
   -dry-run=false \
   ingest
 ```
 
 ### configuration
 
-To run submitter a configuration file is needed with proper input, example: 
+submitter consumes it's configuration values from environment variables, the following are needed:
 
 ```yaml
 UserID: testu@lifescience-ri.eu
@@ -65,6 +64,12 @@ S3Config: /home/user/s3cmd.conf
 | SMTPHost      | The smtp host, used for relaying email notifications |
 | SMTPPort      | The port for the smtp host                           |
 | S3Config      | The path where the s3cmd config resides              |
+
+if you have them properly configured in job.yaml you can consume them like so 
+
+```bash
+export $(yq -r '.spec.template.spec.containers[0].env[] | "\(.name)=\(.value)"' job.yaml)
+```
 
 ### good to know
 
