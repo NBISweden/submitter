@@ -1,1 +1,2 @@
 I want this directory to be part of the repository without any tracked files in it
+This will be the default location for storiing intermediate files, such as stableIDs.txt and fileIDs.txt

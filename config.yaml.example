@@ -10,7 +10,7 @@ UPLOADER_EMAIL: "jane@example.com"
 # Dataset Configuration
 DATASET_ID: "aa-Dataset-abc"
 DATASET_FOLDER: "DATASET_ABC"
-FILE_ID_FOLDER: "/data/"
+DATA_DIRECTORY: "data"
 
 # Authentication
 EMAIL: "myemail@example.com"

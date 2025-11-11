@@ -26,7 +26,7 @@ type Config struct {
 func NewConfig(configPath string) (Config, error) {
 	v := viper.New()
 	v.AutomaticEnv()
-	v.SetDefault("DATA_DIRECTORY", "data/")
+	v.SetDefault("DATA_DIRECTORY", "data")
 	v.SetConfigFile(configPath)
 
 	if err := v.ReadInConfig(); err != nil {

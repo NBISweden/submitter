@@ -8,6 +8,7 @@ metadata:
   labels:
     release: pipeline
 spec:
+  backoffLimit: 0  # Do not retry on failure
   template:
     metadata:
       labels:
@@ -42,7 +43,7 @@ spec:
               value:
             - name: ACCESS_TOKEN 
               value:
-            - name: FILE_ID_FOLDER
+            - name: DATA_DIRECTORY
               value: /data
             - name: USE_TLS
               value: true
