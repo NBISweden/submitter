@@ -13,12 +13,14 @@ import (
 	"strings"
 
 	"github.com/NBISweden/submitter/cmd"
+	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/client"
 	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/cobra"
 )
 
 var dryRun bool
+var configPath string
 
 var accessionCmd = &cobra.Command{
 	Use:   "accession [flags]",
@@ -28,12 +30,12 @@ var accessionCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig()
+		conf, err := config.NewConfig(configPath)
 		if err != nil {
 			return err
 		}
-		sdaclient := client.NewClient(*conf)
-		err = CreateAccessionIDs(sdaclient, dryRun)
+		sdaclient := client.NewClient(conf)
+		err = CreateAccessionIDs(sdaclient, conf)
 		if err != nil {
 			return err
 		}
@@ -45,6 +47,7 @@ var accessionCmd = &cobra.Command{
 func init() {
 	cmd.AddCommand(accessionCmd)
 	accessionCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
+	accessionCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
 }
 
 var ErrFileAlreadyExists = errors.New("file already exists")
@@ -54,8 +57,8 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func CreateAccessionIDs(sdaclient *client.Client, dryRun bool) error {
-	filePath := fmt.Sprintf("/data/%s-fileIDs.txt", sdaclient.DatasetFolder)
+func CreateAccessionIDs(sdaclient *client.Client, conf config.Config) error {
+	filePath := helpers.GetFileIDsPath(*sdaclient, conf)
 	file, err := createFileIDFile(filePath, dryRun)
 	if err != nil {
 		slog.Error("[accession] error occoured when trying to create file", "filePath", filePath)
@@ -131,34 +134,6 @@ func CreateAccessionIDs(sdaclient *client.Client, dryRun bool) error {
 	slog.Info("[accession] accession IDs assigned", "nr_files", len(paths))
 
 	return nil
-}
-
-func GetVerifiedFilePaths(client *client.Client) ([]string, error) {
-	response, err := client.GetUsersFiles()
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close() //nolint:errcheck
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, fmt.Errorf("[accession] failed to read response body %w", err)
-	}
-
-	var files []File
-	if err := json.Unmarshal(body, &files); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal user files: %w", err)
-	}
-
-	var paths []string
-	for _, f := range files {
-		if f.FileStatus == "verified" &&
-			strings.Contains(f.InboxPath, client.DatasetFolder) &&
-			!strings.Contains(f.InboxPath, "PRIVATE") {
-			paths = append(paths, f.InboxPath)
-		}
-	}
-	return paths, nil
 }
 
 func createFileIDFile(fileIDPath string, dryrun bool) (*os.File, error) {

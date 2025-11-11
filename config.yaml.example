@@ -1,0 +1,27 @@
+# ===============================
+# Application Configuration Example. Use this to populate your own config
+# ===============================
+
+# User / Upload Info
+USER_ID: "user-1234"
+UPLOADER: "Jane Doe"
+UPLOADER_EMAIL: "jane@example.com"
+
+# Dataset Configuration
+DATASET_ID: "aa-Dataset-abc"
+DATASET_FOLDER: "DATASET_ABC"
+FILE_ID_FOLDER: "/data/"
+
+# Authentication
+EMAIL: "myemail@example.com"
+PASSWORD: "mypasswordemail"
+
+# API Configuration
+API_HOST: "https://api.example.com"
+ACCESS_TOKEN: "youraccesstoken"
+
+# SMTP (email) Settings
+SMTP_HOST: "smtp.example.com"
+SMTP_PORT: 587
+USE_TLS: true
+SSL_CA_CERT: "/etc/ssl/certs/ca.crt"
