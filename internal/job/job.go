@@ -14,17 +14,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var configPath string
+
 var jobCmd = &cobra.Command{
 	Use:   "job",
 	Short: "Runs all dataset submission steps as a 'job'",
 	Long:  "Runs all dataset submission steps as a 'job' (ingestion, accession, dataset)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig()
+		conf, err := config.NewConfig(configPath)
 		if err != nil {
 			return err
 		}
-		sdaclient := client.NewClient(*conf)
-		err = runJob(sdaclient)
+		err = runJob(conf)
 		if err != nil {
 			return err
 		}
@@ -34,18 +35,21 @@ var jobCmd = &cobra.Command{
 
 func init() {
 	cmd.AddCommand(jobCmd)
+	jobCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
 }
 
-func runJob(client *client.Client) error {
+func runJob(conf config.Config) error {
+	client := client.NewClient(conf)
 	filesCount, err := ingest.IngestFiles(client, false)
 	if err != nil {
 		return err
 	}
+	//TODO: Look at this logic. Goal: remove the part where we store data on disk, keep it in memory for the job
 	_, err = helpers.WaitForAccession(client, filesCount, 5*time.Minute, 24*time.Hour)
 	if err != nil {
 		return err
 	}
-	err = accession.CreateAccessionIDs(client, false)
+	err = accession.CreateAccessionIDs(client, conf)
 	if err != nil {
 		return err
 	}
@@ -55,7 +59,7 @@ func runJob(client *client.Client) error {
 	slog.Info("Waiting before sending dataset creation request", "delay", waitTime)
 	time.Sleep(waitTime)
 
-	err = dataset.CreateDataset(client, false)
+	err = dataset.CreateDataset(client, conf)
 	if err != nil {
 		return err
 	}

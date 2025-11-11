@@ -15,6 +15,7 @@ import (
 )
 
 var dryRun bool
+var configPath string
 
 var ingestCmd = &cobra.Command{
 	Use:   "ingest [flags]",
@@ -24,11 +25,11 @@ var ingestCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig()
+		conf, err := config.NewConfig(configPath)
 		if err != nil {
 			return err
 		}
-		sdaclient := client.NewClient(*conf)
+		sdaclient := client.NewClient(conf)
 		_, err = IngestFiles(sdaclient, dryRun)
 		if err != nil {
 			return err
@@ -41,6 +42,7 @@ var ingestCmd = &cobra.Command{
 func init() {
 	cmd.AddCommand(ingestCmd)
 	ingestCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
+	ingestCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
 }
 
 type File struct {

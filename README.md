@@ -36,40 +36,24 @@ Running ingestion:
 
 ### configuration
 
-submitter consumes it's configuration values from environment variables, the following are needed:
+submitter can consume configuration from either `config.yaml` or from environment variables. If both are supplied then the environment variables will take priority. If using config.yaml it is expected to be located in the root directory of the project
 
-```yaml
-UserID: testu@lifescience-ri.eu
-Uploader: John Doe
-UploaderEmail: johndoe@email.com
-DatasetID: aa-Dataset-benchmark-1k
-DatasetFolder: DATASET_BENCHMARK_1K
-Email: myemail@nbis.se
-Password: mypassword
-APIHost: https://api.bp.nbis.se
-SMTPHost: tickets.nbis.se
-SMTPPort: 587
-S3Config: /home/user/s3cmd.conf
-```
-
-| Name          | Description                                          |
-| ------------- | ---------------------------------------------------- |
-| Uploader      | The name of the dataset uploader                     |
-| UserID        | The user id of the uploader                          |
-| DatasetID     | The dataset id                                       |
-| DatasetFolder | The folder where the dataset resides                 |
-| Email         | Your nbis email, used for sending out notifications  |
-| Password      | Your password associated with your nbis email        |
-| APIHost       | The hostname associated with the SDA api             |
-| SMTPHost      | The smtp host, used for relaying email notifications |
-| SMTPPort      | The port for the smtp host                           |
-| S3Config      | The path where the s3cmd config resides              |
-
-if you have them properly configured in job.yaml you can consume them like so 
-
-```bash
-export $(yq -r '.spec.template.spec.containers[0].env[] | "\(.name)=\(.value)"' job.yaml)
-```
+| Name          | Description                                           |
+| ------------- | ----------------------------------------------------- |
+| UserID        | The user id of the uploader                           |
+| Uploader      | The name of the dataset uploader                      |
+| UploaderEmail | Email address of the uploader                         |
+| DatasetID     | The dataset id                                        |
+| DatasetFolder | The folder where the dataset resides                  |
+| FileIdFolder  | The folder to store files with dataset ids in         |
+| Email         | Your nbis email, used for sending out notifications   |
+| Password      | Your password associated with your nbis email         |
+| APIHost       | The hostname associated with the SDA api              |
+| SMTPHost      | The smtp host, used for relaying email notifications  |
+| SMTPPort      | The port for the smtp host                            |
+| AccessToken   | Access Token for the SDA API                          |
+| UseTLS        | If set, will try to setup TLS connection              |
+| SSLCACert     | The location of the ca cert to use for TLS connection |
 
 ### good to know
 

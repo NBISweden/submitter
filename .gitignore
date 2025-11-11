@@ -27,6 +27,9 @@ go.work.sum
 # Configuration file in root dir
 config.yaml
 
+# Job manifest file in root dir
+job.yaml
+
 # Binary if no output is specified
 submitter
 

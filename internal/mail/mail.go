@@ -17,13 +17,14 @@ import (
 //go:embed templates/*.html
 var templateFS embed.FS
 var dryRun bool
+var configPath string
 
 var mailCmd = &cobra.Command{
 	Use:   "mail",
 	Short: "Send mail notifications",
 	Long:  "Send mail notifications",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig()
+		conf, err := config.NewConfig(configPath)
 		if err != nil {
 			return err
 		}
@@ -41,6 +42,7 @@ var mailCmd = &cobra.Command{
 func init() {
 	cmd.AddCommand(mailCmd)
 	mailCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will send all emails to the address in configuration.Email (env or yaml conf)")
+	mailCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
 }
 
 type Mail struct {
@@ -67,7 +69,7 @@ type Notifiers struct {
 	Attachments []string
 }
 
-func Configure(c *config.Config) *Mail {
+func Configure(c config.Config) *Mail {
 	m := &Mail{
 		SMTPHost: c.SMTPHost,
 		SMTPport: c.SMTPPort,
