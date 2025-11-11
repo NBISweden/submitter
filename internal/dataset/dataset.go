@@ -12,14 +12,16 @@ import (
 	"slices"
 
 	"github.com/NBISweden/submitter/cmd"
+	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/client"
 	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/cobra"
 )
 
 var dryRun bool
+var configPath string
 
-var accessionCmd = &cobra.Command{
+var datasetCmd = &cobra.Command{
 	Use:   "dataset [flags]",
 	Short: "Trigger dataset creation",
 	Long:  "Trigger dataset creation",
@@ -27,12 +29,12 @@ var accessionCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig()
+		conf, err := config.NewConfig(configPath)
 		if err != nil {
 			return err
 		}
-		sdaclient := client.NewClient(*conf)
-		err = CreateDataset(sdaclient, dryRun)
+		sdaclient := client.NewClient(conf)
+		err = CreateDataset(sdaclient, conf)
 		if err != nil {
 			return err
 		}
@@ -42,8 +44,9 @@ var accessionCmd = &cobra.Command{
 }
 
 func init() {
-	cmd.AddCommand(accessionCmd)
-	accessionCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
+	cmd.AddCommand(datasetCmd)
+	datasetCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
+	datasetCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
 }
 
 var ErrFileAlreadyExists = errors.New("file already exists")
@@ -59,16 +62,16 @@ type UserFiles struct {
 	InboxPath   string `json:"inboxPath"`
 }
 
-func CreateDataset(sdaclient *client.Client, dryRun bool) error {
+func CreateDataset(sdaclient *client.Client, conf config.Config) error {
 	if !dryRun {
-		err := createStableIDsFile(sdaclient)
+		err := createStableIDsFile(*sdaclient, conf)
 		if err != nil {
 			slog.Error("[dataset] failed to create file with stable ids")
 		}
 	}
 
 	var fileIDsList []string
-	filePath := fmt.Sprintf("/data/%s-fileIDs.txt", sdaclient.DatasetFolder)
+	filePath := helpers.GetFileIDsPath(*sdaclient, conf)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -154,8 +157,8 @@ func sendInChunks(fileIDsList []string, sdaclient *client.Client) error {
 	return nil
 }
 
-func createStableIDsFile(sdaclient *client.Client) error {
-	filePath := fmt.Sprintf("/data/%s-stableIDs.txt", sdaclient.DatasetFolder)
+func createStableIDsFile(sdaclient client.Client, conf config.Config) error {
+	filePath := helpers.GetStableIDsPath(conf, sdaclient)
 	if _, err := os.Stat(filePath); err == nil {
 		return ErrFileAlreadyExists
 	} else if !os.IsNotExist(err) {

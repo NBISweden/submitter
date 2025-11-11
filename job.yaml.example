@@ -1,4 +1,6 @@
-# job manifest boilerplate, you can use this and populate the empty fields
+# ===============================
+# Kubernetes Job Manifest Example. Use this to populate your own config
+# ===============================
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -40,6 +42,8 @@ spec:
               value:
             - name: ACCESS_TOKEN 
               value:
+            - name: FILE_ID_FOLDER
+              value: /data
             - name: USE_TLS
               value: true
             - name: SSL_CA_Cert
