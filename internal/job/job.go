@@ -56,7 +56,7 @@ func runJob(conf config.Config) error {
 
 	// We give some time for the SDA backend to process our accession ids. During test-runs it's been fine with 2 minutes
 	waitTime := 2 * time.Minute
-	slog.Info("waiting before sending dataset creation request", "delay", waitTime)
+	slog.Info("[job] waiting before sending dataset creation request", "delay", waitTime)
 	time.Sleep(waitTime)
 
 	err = dataset.CreateDataset(api, conf)
@@ -64,6 +64,6 @@ func runJob(conf config.Config) error {
 		return err
 	}
 
-	slog.Info("dataset submission %s completed!", "datasetID", api.DatasetID)
+	slog.Info("[job] dataset submission %s completed!", "datasetID", api.DatasetID)
 	return nil
 }

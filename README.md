@@ -1,7 +1,3 @@
-<div align="center">
-:construction: This project is still under development and things might be buggy or work in unexpected ways :construction:
-</div>
-
 # submitter
 This project can be used to to help with administrative tasks during dataset submission to the big picture project. This tool wraps a set of rules and buisseness logic around API calls to the big picture api. It uses the users privellages to do the needed operations.
 
@@ -15,7 +11,7 @@ Commands must be one of:
 - `accession`
 - `dataset`
 - `mail`
-- `all`
+- `job`
 
 ### arguments
 
@@ -55,19 +51,9 @@ submitter can consume configuration from either `config.yaml` or from environmen
 | UseTLS        | If set, will try to setup TLS connection              |
 | SSLCACert     | The location of the ca cert to use for TLS connection |
 
-### good to know
+### contribute
 
-`question:` What's the deal with the brackets in all the prints?
-
-`anwser:` Since the goal is to have a end-to-end flow of all stages ingestion -> accession -> dataset I feelt it was usefull during testing to understand what package logged something. So I added the package name in brackets whenever something is logged / printed. That way it was easier to understand which part of the flow executed or failed. This can be reworked and / or retought at some point.
-
-`question:` What's the deal with the -dry-run flag? 
-
-`anwser:` Since many iterations and testing is requiered when developing this project I never wanted to accedentally send something or change db states. To avoid this the dry-run flag is (as of this writing) default set to true. This means if you want to actually execute something you need to run `./submitter --dry-run=false <COMMAND>` for it to take full effect.
-
-`question:` How do I contribute?
-
-`answer:` As of right now there are no explicit rules. Feel free to reach out if you have any questions `erik.zeidlitz@nbis.se`
+As of right now there are no explicit rules. Feel free to reach out if you have any questions `erik.zeidlitz@nbis.se`
 
 ### testing
 
