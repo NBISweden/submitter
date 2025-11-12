@@ -39,31 +39,31 @@ func init() {
 }
 
 func runJob(conf config.Config) error {
-	client := client.NewClient(conf)
-	filesCount, err := ingest.IngestFiles(client, false)
+	api := client.New(conf)
+	filesCount, err := ingest.IngestFiles(api, false)
 	if err != nil {
 		return err
 	}
 	//TODO: Look at this logic. Goal: remove the part where we store data on disk, keep it in memory for the job
-	_, err = helpers.WaitForAccession(client, filesCount, 5*time.Minute, 24*time.Hour)
+	_, err = helpers.WaitForAccession(api, filesCount, 5*time.Minute, 24*time.Hour)
 	if err != nil {
 		return err
 	}
-	err = accession.CreateAccessionIDs(client, conf)
+	err = accession.CreateAccessionIDs(api, conf)
 	if err != nil {
 		return err
 	}
 
 	// We give some time for the SDA backend to process our accession ids. During test-runs it's been fine with 2 minutes
 	waitTime := 2 * time.Minute
-	slog.Info("Waiting before sending dataset creation request", "delay", waitTime)
+	slog.Info("waiting before sending dataset creation request", "delay", waitTime)
 	time.Sleep(waitTime)
 
-	err = dataset.CreateDataset(client, conf)
+	err = dataset.CreateDataset(api, conf)
 	if err != nil {
 		return err
 	}
 
-	slog.Info("Dataset Submission %s completed!", "DatasetID", client.DatasetID)
+	slog.Info("dataset submission %s completed!", "datasetID", api.DatasetID)
 	return nil
 }

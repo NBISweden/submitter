@@ -29,8 +29,8 @@ var ingestCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		sdaclient := client.NewClient(conf)
-		_, err = IngestFiles(sdaclient, dryRun)
+		api := client.New(conf)
+		_, err = IngestFiles(api, dryRun)
 		if err != nil {
 			return err
 		}
@@ -50,10 +50,10 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func IngestFiles(sdaclient *client.Client, dryRun bool) (int, error) {
-	response, err := sdaclient.GetUsersFiles()
+func IngestFiles(api *client.Client, dryRun bool) (int, error) {
+	response, err := api.GetUsersFiles()
 	if err != nil {
-		slog.Error("[ingest] error when getting user files from sdaclient", "err", err)
+		slog.Error("[ingest] error when getting user files from api", "err", err)
 		return 0, err
 	}
 	if response.StatusCode != http.StatusOK {
@@ -77,7 +77,7 @@ func IngestFiles(sdaclient *client.Client, dryRun bool) (int, error) {
 		if f.FileStatus != "uploaded" {
 			continue
 		}
-		if !strings.Contains(f.InboxPath, sdaclient.DatasetFolder) {
+		if !strings.Contains(f.InboxPath, api.DatasetFolder) {
 			continue
 		}
 		if strings.Contains(f.InboxPath, "PRIVATE") || strings.Contains(f.InboxPath, "LANDING PAGE") {
@@ -100,11 +100,11 @@ func IngestFiles(sdaclient *client.Client, dryRun bool) (int, error) {
 	for _, path := range fileList {
 		payload := map[string]string{
 			"filepath": path,
-			"user":     sdaclient.UserID,
+			"user":     api.UserID,
 		}
 		data, _ := json.Marshal(payload)
 
-		response, err = sdaclient.PostFileIngest(data)
+		response, err = api.PostFileIngest(data)
 		if err != nil {
 			return filesCount, err
 		}

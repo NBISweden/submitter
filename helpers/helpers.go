@@ -17,10 +17,10 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func WaitForAccession(sdaclient *client.Client, target int, interval time.Duration, timeout time.Duration) ([]string, error) {
+func WaitForAccession(api *client.Client, target int, interval time.Duration, timeout time.Duration) ([]string, error) {
 	deadline := time.Now().Add(timeout)
 	for {
-		paths, err := getVerifiedFilePaths(sdaclient)
+		paths, err := getVerifiedFilePaths(api)
 		if err != nil {
 			return nil, err
 		}
@@ -37,12 +37,12 @@ func WaitForAccession(sdaclient *client.Client, target int, interval time.Durati
 	}
 }
 
-func GetFileIDsPath(sdaclient client.Client, conf config.Config) string {
-	return fmt.Sprintf("%s/%s-fileIDs.txt", conf.DataDirectory, sdaclient.DatasetFolder)
+func GetFileIDsPath(api client.Client, conf config.Config) string {
+	return fmt.Sprintf("%s/%s-fileIDs.txt", conf.DataDirectory, api.DatasetFolder)
 }
 
-func GetStableIDsPath(conf config.Config, sdaclient client.Client) string {
-	return fmt.Sprintf("%s/%s-stableIDs.txt", conf.DataDirectory, sdaclient.DatasetFolder)
+func GetStableIDsPath(conf config.Config, api client.Client) string {
+	return fmt.Sprintf("%s/%s-stableIDs.txt", conf.DataDirectory, api.DatasetFolder)
 }
 
 func getVerifiedFilePaths(client *client.Client) ([]string, error) {
