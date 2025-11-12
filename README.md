@@ -51,6 +51,8 @@ submitter can consume configuration from either `config.yaml` or from environmen
 | UseTLS        | If set, will try to setup TLS connection              |
 | SSLCACert     | The location of the ca cert to use for TLS connection |
 
+see the `config.yaml.example` or `job.yaml.example` for a base template with what fields to fill
+
 ### contribute
 
 As of right now there are no explicit rules. Feel free to reach out if you have any questions `erik.zeidlitz@nbis.se`

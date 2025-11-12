@@ -4,10 +4,11 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name:
+  name: aa-Dataset-abc
   labels:
     release: pipeline
 spec:
+  backoffLimit: 0
   template:
     metadata:
       labels:
@@ -21,33 +22,33 @@ spec:
           args: ["job"]
           env:
             - name: USER_ID
-              value:
+              value: johndoe@lifescience-ri.eu
             - name: UPLOADER
-              value:
+              value: John Doe
             - name: UPLOADER_EMAIL
-              value:
+              value: uploader@email.com
             - name: DATASET_ID
-              value:
+              value: aa-Dataset-abc
             - name: DATASET_FOLDER
-              value:
+              value: DATASET_ABC
             - name: EMAIL
-              value:
+              value: youremail@yourmailservice.com
             - name: PASSWORD
-              value:
+              value: yourpassword
             - name: API_HOST
-              value:
+              value: https://api:8080
             - name: SMTP_HOST
-              value:
+              value: yourmailservice.com
             - name: SMTP_PORT
-              value:
+              value: "587"
             - name: ACCESS_TOKEN 
               value:
-            - name: FILE_ID_FOLDER
+            - name: DATA_DIRECTORY
               value: /data
             - name: USE_TLS
-              value: true
-            - name: SSL_CA_Cert
-              value: /.secrets/tls/ca.crt
+              value: "true"
+            - name: SSL_CA_CERT
+              value: "/.secrets/tls/ca.crt"
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
@@ -66,4 +67,4 @@ spec:
           emptyDir: {}
         - name: tls
           secret:
-            secretName: pipeline-sda-svc-api-certs
+            secretName: svc-api-certs
