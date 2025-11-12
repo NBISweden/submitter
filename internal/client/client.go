@@ -22,8 +22,8 @@ type Client struct {
 	HTTPClient    *http.Client
 }
 
-func NewClient(conf config.Config) *Client {
-	slog.Info("setting up new sda client", "UseTLS", conf.UseTLS, "caCert", conf.SSLCACert)
+func New(conf config.Config) *Client {
+	slog.Info("[client] initializing client", "UseTLS", conf.UseTLS, "caCert", conf.SSLCACert)
 	var httpClient *http.Client
 	httpClient = http.DefaultClient
 	if conf.UseTLS {
@@ -88,7 +88,7 @@ func (c *Client) PostDatasetCreate(payload []byte) (*http.Response, error) {
 func (c *Client) doRequest(method, path string, body []byte) (*http.Response, error) {
 	url := fmt.Sprintf("%s/%s", c.APIHost, path)
 	req, err := http.NewRequest(method, url, bytes.NewReader(body))
-	slog.Info("calling", "method", method, "url", url)
+	slog.Info("[client] calling", "method", method, "url", url)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +103,6 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 		return nil, err
 	}
 
-	slog.Info("Response", "status", resp.Status)
+	slog.Info("[client] response", "status", resp.Status)
 	return resp, nil
 }

@@ -34,8 +34,8 @@ var accessionCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		sdaclient := client.NewClient(conf)
-		err = CreateAccessionIDs(sdaclient, conf)
+		api := client.New(conf)
+		err = CreateAccessionIDs(api, conf)
 		if err != nil {
 			return err
 		}
@@ -57,8 +57,8 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func CreateAccessionIDs(sdaclient *client.Client, conf config.Config) error {
-	filePath := helpers.GetFileIDsPath(*sdaclient, conf)
+func CreateAccessionIDs(api *client.Client, conf config.Config) error {
+	filePath := helpers.GetFileIDsPath(*api, conf)
 	file, err := createFileIDFile(filePath, dryRun)
 	if err != nil {
 		slog.Error("[accession] error occoured when trying to create file", "filePath", filePath)
@@ -66,9 +66,9 @@ func CreateAccessionIDs(sdaclient *client.Client, conf config.Config) error {
 	}
 	defer file.Close() //nolint:errcheck
 
-	response, err := sdaclient.GetUsersFiles()
+	response, err := api.GetUsersFiles()
 	if err != nil {
-		slog.Error("[accession] error when getting user files from sdaclient", "err", err)
+		slog.Error("[accession] error when getting user files from api", "err", err)
 		return err
 	}
 	if response.StatusCode != http.StatusOK {
@@ -90,7 +90,7 @@ func CreateAccessionIDs(sdaclient *client.Client, conf config.Config) error {
 	var paths []string
 	for _, f := range files {
 		if f.FileStatus == "verified" &&
-			strings.Contains(f.InboxPath, sdaclient.DatasetFolder) &&
+			strings.Contains(f.InboxPath, api.DatasetFolder) &&
 			!strings.Contains(f.InboxPath, "PRIVATE") {
 			paths = append(paths, f.InboxPath)
 		}
@@ -111,13 +111,13 @@ func CreateAccessionIDs(sdaclient *client.Client, conf config.Config) error {
 		payload, err := json.Marshal(map[string]string{
 			"accession_id": accessionID,
 			"filepath":     filepath,
-			"user":         sdaclient.UserID,
+			"user":         api.UserID,
 		})
 		if err != nil {
 			return err
 		}
 
-		resp, err := sdaclient.PostFileAccession(payload)
+		resp, err := api.PostFileAccession(payload)
 		if err != nil {
 			if errors.Is(err, io.ErrUnexpectedEOF) {
 				continue

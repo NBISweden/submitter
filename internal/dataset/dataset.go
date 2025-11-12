@@ -33,8 +33,8 @@ var datasetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		sdaclient := client.NewClient(conf)
-		err = CreateDataset(sdaclient, conf)
+		api := client.New(conf)
+		err = CreateDataset(api, conf)
 		if err != nil {
 			return err
 		}
@@ -62,16 +62,16 @@ type UserFiles struct {
 	InboxPath   string `json:"inboxPath"`
 }
 
-func CreateDataset(sdaclient *client.Client, conf config.Config) error {
+func CreateDataset(api *client.Client, conf config.Config) error {
 	if !dryRun {
-		err := createStableIDsFile(*sdaclient, conf)
+		err := createStableIDsFile(*api, conf)
 		if err != nil {
 			slog.Error("[dataset] failed to create file with stable ids")
 		}
 	}
 
 	var fileIDsList []string
-	filePath := helpers.GetFileIDsPath(*sdaclient, conf)
+	filePath := helpers.GetFileIDsPath(*api, conf)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func CreateDataset(sdaclient *client.Client, conf config.Config) error {
 	}
 
 	if len(fileIDsList) > 100 {
-		err := sendInChunks(fileIDsList, sdaclient)
+		err := sendInChunks(fileIDsList, api)
 		if err != nil {
 			return err
 		}
@@ -99,15 +99,15 @@ func CreateDataset(sdaclient *client.Client, conf config.Config) error {
 	if len(fileIDsList) <= 100 {
 		payload := Payload{
 			AccessionIDs: fileIDsList,
-			DatasetID:    sdaclient.DatasetID,
-			User:         sdaclient.UserID,
+			DatasetID:    api.DatasetID,
+			User:         api.UserID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
 			return err
 		}
 
-		response, err := sdaclient.PostDatasetCreate(jsonData)
+		response, err := api.PostDatasetCreate(jsonData)
 		if err != nil {
 			// Se comment bellow in sendInChunks() why this might be needed
 			if errors.Is(err, io.ErrUnexpectedEOF) {
@@ -125,21 +125,21 @@ func CreateDataset(sdaclient *client.Client, conf config.Config) error {
 	return nil
 }
 
-func sendInChunks(fileIDsList []string, sdaclient *client.Client) error {
+func sendInChunks(fileIDsList []string, api *client.Client) error {
 	slog.Info("[dataset] more than 100 entries, sending in chunks of 100")
 	chunks := slices.Chunk(fileIDsList, 100)
 	allChunks := slices.Collect(chunks)
 	for _, chunk := range allChunks {
 		payload := Payload{
 			AccessionIDs: chunk,
-			DatasetID:    sdaclient.DatasetID,
-			User:         sdaclient.UserID,
+			DatasetID:    api.DatasetID,
+			User:         api.UserID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
 			return err
 		}
-		response, err := sdaclient.PostDatasetCreate(jsonData)
+		response, err := api.PostDatasetCreate(jsonData)
 		/*
 			As of 2025-09-17 we can get EOF responses when sending the accession id request to the sda api, however the request will still have been processed on the server side, but we won't get a response back since the TCP connection will be terminated.
 		*/
@@ -157,8 +157,8 @@ func sendInChunks(fileIDsList []string, sdaclient *client.Client) error {
 	return nil
 }
 
-func createStableIDsFile(sdaclient client.Client, conf config.Config) error {
-	filePath := helpers.GetStableIDsPath(conf, sdaclient)
+func createStableIDsFile(api client.Client, conf config.Config) error {
+	filePath := helpers.GetStableIDsPath(conf, api)
 	if _, err := os.Stat(filePath); err == nil {
 		return ErrFileAlreadyExists
 	} else if !os.IsNotExist(err) {
@@ -171,7 +171,7 @@ func createStableIDsFile(sdaclient client.Client, conf config.Config) error {
 	}
 	defer file.Close() //nolint:errcheck
 
-	r, err := sdaclient.GetUsersFilesWithPrefix()
+	r, err := api.GetUsersFilesWithPrefix()
 	if err != nil {
 		return err
 	}
