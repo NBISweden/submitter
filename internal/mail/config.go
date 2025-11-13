@@ -19,6 +19,7 @@ func NewConfig(configPath string) (*Config, error) {
 	v := viper.New()
 	v.AutomaticEnv()
 	v.SetConfigFile(configPath)
+	v.ReadInConfig()
 
 	cfg := &Config{
 		EmailAddress:  v.GetString("EMAIL_ADDRESS"),
