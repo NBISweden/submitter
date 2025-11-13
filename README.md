@@ -1,5 +1,8 @@
 # submitter
-This project can be used to to help with administrative tasks during dataset submission to the big picture project. This tool wraps a set of rules and buisseness logic around API calls to the big picture api. It uses the users privellages to do the needed operations.
+
+This project can be used as a tool to help with administrative tasks during dataset submission to the big picture project. It supports three primary functions, making data ingestion, assigning accession ids to each ingested file, and creating a dataset for all files ingested with a accession id.
+
+It can also be run as a standalone job in kubernetes and try to complete the entire process.
 
 ### usage
 
@@ -13,43 +16,25 @@ Commands must be one of:
 - `mail`
 - `job`
 
-### arguments
+#### ingestion
 
-| Flag              | Default                          | Required | Description                                                                 |
-|-------------------|----------------------------------|----------|-----------------------------------------------------------------------------|
-| `-dry-run`        | `true`                           | No       | Run without executing state changing API calls                              |
-| `-config`         | `config.yaml`                    | No       | The config file with all input information and other needed metadata        |
+TODO: Describe this
 
-### example
+#### accession
 
-Running ingestion:
+TODO: Describe this
 
-```bash
-./submitter \
-  -dry-run=false \
-  ingest
-```
+#### dataset
+
+TODO: Describe this
+
+#### job
+
+TODO: Describe this
 
 ### configuration
 
 submitter can consume configuration from either `config.yaml` or from environment variables. If both are supplied then the environment variables will take priority. If using config.yaml it is expected to be located in the root directory of the project
-
-| Name          | Description                                           |
-| ------------- | ----------------------------------------------------- |
-| UserID        | The user id of the uploader                           |
-| Uploader      | The name of the dataset uploader                      |
-| UploaderEmail | Email address of the uploader                         |
-| DatasetID     | The dataset id                                        |
-| DatasetFolder | The folder where the dataset resides                  |
-| FileIdFolder  | The folder to store files with dataset ids in         |
-| Email         | Your nbis email, used for sending out notifications   |
-| Password      | Your password associated with your nbis email         |
-| APIHost       | The hostname associated with the SDA api              |
-| SMTPHost      | The smtp host, used for relaying email notifications  |
-| SMTPPort      | The port for the smtp host                            |
-| AccessToken   | Access Token for the SDA API                          |
-| UseTLS        | If set, will try to setup TLS connection              |
-| SSLCACert     | The location of the ca cert to use for TLS connection |
 
 see the `config.yaml.example` or `job.yaml.example` for a base template with what fields to fill
 

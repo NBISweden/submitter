@@ -8,7 +8,6 @@ import (
 	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/accession"
 	"github.com/NBISweden/submitter/internal/client"
-	"github.com/NBISweden/submitter/internal/config"
 	"github.com/NBISweden/submitter/internal/dataset"
 	"github.com/NBISweden/submitter/internal/ingest"
 	"github.com/spf13/cobra"
@@ -21,11 +20,7 @@ var jobCmd = &cobra.Command{
 	Short: "Runs all dataset submission steps as a 'job'",
 	Long:  "Runs all dataset submission steps as a 'job' (ingestion, accession, dataset)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig(configPath)
-		if err != nil {
-			return err
-		}
-		err = runJob(conf)
+		err := runJob()
 		if err != nil {
 			return err
 		}
@@ -38,9 +33,12 @@ func init() {
 	jobCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
 }
 
-func runJob(conf config.Config) error {
-	api := client.New(conf)
-	filesCount, err := ingest.IngestFiles(api, false)
+func runJob() error {
+	api, err := client.New(configPath)
+	if err != nil {
+		return err
+	}
+	filesCount, err := ingest.IngestFiles(api)
 	if err != nil {
 		return err
 	}
@@ -49,7 +47,7 @@ func runJob(conf config.Config) error {
 	if err != nil {
 		return err
 	}
-	err = accession.CreateAccessionIDs(api, conf)
+	err = accession.CreateAccessionIDs(api)
 	if err != nil {
 		return err
 	}
@@ -59,7 +57,7 @@ func runJob(conf config.Config) error {
 	slog.Info("[job] waiting before sending dataset creation request", "delay", waitTime)
 	time.Sleep(waitTime)
 
-	err = dataset.CreateDataset(api, conf)
+	err = dataset.CreateDataset(api)
 	if err != nil {
 		return err
 	}

@@ -14,12 +14,12 @@ import (
 	"github.com/NBISweden/submitter/cmd"
 	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/client"
-	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/cobra"
 )
 
 var dryRun bool
 var configPath string
+var dataDirectory string
 
 var datasetCmd = &cobra.Command{
 	Use:   "dataset [flags]",
@@ -29,12 +29,11 @@ var datasetCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig(configPath)
+		api, err := client.New(configPath)
 		if err != nil {
 			return err
 		}
-		api := client.New(conf)
-		err = CreateDataset(api, conf)
+		err = CreateDataset(api)
 		if err != nil {
 			return err
 		}
@@ -47,6 +46,7 @@ func init() {
 	cmd.AddCommand(datasetCmd)
 	datasetCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
 	datasetCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
+	datasetCmd.Flags().StringVar(&dataDirectory, "data-directory", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
 }
 
 var ErrFileAlreadyExists = errors.New("file already exists")
@@ -62,16 +62,16 @@ type UserFiles struct {
 	InboxPath   string `json:"inboxPath"`
 }
 
-func CreateDataset(api *client.Client, conf config.Config) error {
+func CreateDataset(api *client.Client) error {
 	if !dryRun {
-		err := createStableIDsFile(*api, conf)
+		err := createStableIDsFile(api)
 		if err != nil {
 			slog.Error("[dataset] failed to create file with stable ids")
 		}
 	}
 
 	var fileIDsList []string
-	filePath := helpers.GetFileIDsPath(*api, conf)
+	filePath := helpers.GetFileIDsPath(dataDirectory, api.DatasetFolder)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -157,8 +157,8 @@ func sendInChunks(fileIDsList []string, api *client.Client) error {
 	return nil
 }
 
-func createStableIDsFile(api client.Client, conf config.Config) error {
-	filePath := helpers.GetStableIDsPath(conf, api)
+func createStableIDsFile(api *client.Client) error {
+	filePath := helpers.GetStableIDsPath(dataDirectory, api.DatasetFolder)
 	if _, err := os.Stat(filePath); err == nil {
 		return ErrFileAlreadyExists
 	} else if !os.IsNotExist(err) {

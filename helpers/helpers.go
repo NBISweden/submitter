@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/NBISweden/submitter/internal/client"
-	"github.com/NBISweden/submitter/internal/config"
 )
 
 type File struct {
@@ -17,6 +16,7 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
+// Move this to client.go package?
 func WaitForAccession(api *client.Client, target int, interval time.Duration, timeout time.Duration) ([]string, error) {
 	deadline := time.Now().Add(timeout)
 	for {
@@ -35,14 +35,6 @@ func WaitForAccession(api *client.Client, target int, interval time.Duration, ti
 		slog.Info(fmt.Sprintf("[accession] found %d/%d files - waiting: internal: %s timeout: %s", len(paths), target, interval, timeout))
 		time.Sleep(interval)
 	}
-}
-
-func GetFileIDsPath(api client.Client, conf config.Config) string {
-	return fmt.Sprintf("%s/%s-fileIDs.txt", conf.DataDirectory, api.DatasetFolder)
-}
-
-func GetStableIDsPath(conf config.Config, api client.Client) string {
-	return fmt.Sprintf("%s/%s-stableIDs.txt", conf.DataDirectory, api.DatasetFolder)
 }
 
 func getVerifiedFilePaths(client *client.Client) ([]string, error) {
@@ -71,4 +63,12 @@ func getVerifiedFilePaths(client *client.Client) ([]string, error) {
 		}
 	}
 	return paths, nil
+}
+
+func GetFileIDsPath(dataDirectory string, datasetFolder string) string {
+	return fmt.Sprintf("%s/%s-fileIDs.txt", dataDirectory, datasetFolder)
+}
+
+func GetStableIDsPath(dataDirectory string, datasetFolder string) string {
+	return fmt.Sprintf("%s/%s-stableIDs.txt", dataDirectory, datasetFolder)
 }

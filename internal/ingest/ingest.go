@@ -10,7 +10,6 @@ import (
 
 	"github.com/NBISweden/submitter/cmd"
 	"github.com/NBISweden/submitter/internal/client"
-	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -25,12 +24,11 @@ var ingestCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig(configPath)
+		api, err := client.New(configPath)
 		if err != nil {
 			return err
 		}
-		api := client.New(conf)
-		_, err = IngestFiles(api, dryRun)
+		_, err = IngestFiles(api)
 		if err != nil {
 			return err
 		}
@@ -50,7 +48,7 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func IngestFiles(api *client.Client, dryRun bool) (int, error) {
+func IngestFiles(api *client.Client) (int, error) {
 	response, err := api.GetUsersFiles()
 	if err != nil {
 		slog.Error("[ingest] error when getting user files from api", "err", err)

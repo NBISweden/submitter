@@ -15,12 +15,12 @@ import (
 	"github.com/NBISweden/submitter/cmd"
 	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/client"
-	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/cobra"
 )
 
 var dryRun bool
 var configPath string
+var dataDirectory string
 
 var accessionCmd = &cobra.Command{
 	Use:   "accession [flags]",
@@ -30,12 +30,8 @@ var accessionCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig(configPath)
-		if err != nil {
-			return err
-		}
-		api := client.New(conf)
-		err = CreateAccessionIDs(api, conf)
+		api, err := client.New(configPath)
+		err = CreateAccessionIDs(api)
 		if err != nil {
 			return err
 		}
@@ -48,6 +44,7 @@ func init() {
 	cmd.AddCommand(accessionCmd)
 	accessionCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
 	accessionCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
+	accessionCmd.Flags().StringVar(&dataDirectory, "data-directory", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
 }
 
 var ErrFileAlreadyExists = errors.New("file already exists")
@@ -57,8 +54,8 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func CreateAccessionIDs(api *client.Client, conf config.Config) error {
-	filePath := helpers.GetFileIDsPath(*api, conf)
+func CreateAccessionIDs(api *client.Client) error {
+	filePath := helpers.GetFileIDsPath(dataDirectory, api.DatasetFolder)
 	file, err := createFileIDFile(filePath, dryRun)
 	if err != nil {
 		slog.Error("[accession] error occoured when trying to create file", "filePath", filePath)
