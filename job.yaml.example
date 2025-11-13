@@ -23,7 +23,7 @@ spec:
           env:
             - name: USER_ID
               value: johndoe@lifescience-ri.eu
-            - name: UPLOADER
+            - name: UPLOADER_NAME
               value: John Doe
             - name: UPLOADER_EMAIL
               value: uploader@email.com
@@ -31,9 +31,9 @@ spec:
               value: aa-Dataset-abc
             - name: DATASET_FOLDER
               value: DATASET_ABC
-            - name: EMAIL
+            - name: EMAIL_ADDRESS
               value: youremail@yourmailservice.com
-            - name: PASSWORD
+            - name: EMAIL_PASSWORD
               value: yourpassword
             - name: API_HOST
               value: https://api:8080
@@ -43,9 +43,7 @@ spec:
               value: "587"
             - name: ACCESS_TOKEN 
               value:
-            - name: DATA_DIRECTORY
-              value: /data
-            - name: USE_TLS
+            - name: SSL
               value: "true"
             - name: SSL_CA_CERT
               value: "/.secrets/tls/ca.crt"

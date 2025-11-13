@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/NBISweden/submitter/cmd"
-	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/gomail.v2"
 )
@@ -24,11 +23,11 @@ var mailCmd = &cobra.Command{
 	Short: "Send mail notifications",
 	Long:  "Send mail notifications",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig(configPath)
+		conf, err := NewConfig(configPath)
 		if err != nil {
 			return err
 		}
-		m := Configure(conf)
+		m := New(conf)
 		for _, recipient := range []string{"BigPicture", "Minttu", "Submitter"} {
 			if err := m.Notify(recipient, dryRun); err != nil {
 				return fmt.Errorf("failed to notify %s: %w", recipient, err)
@@ -69,15 +68,15 @@ type Notifiers struct {
 	Attachments []string
 }
 
-func Configure(c config.Config) *Mail {
+func New(c *Config) *Mail {
 	m := &Mail{
 		SMTPHost: c.SMTPHost,
 		SMTPport: c.SMTPPort,
-		Email:    c.Email,
-		Password: c.Password,
-		From:     c.Email,
+		Email:    c.EmailAddress,
+		Password: c.EmailPassword,
+		From:     c.EmailAddress,
 		Data: TemplateData{
-			Uploader:      c.Uploader,
+			Uploader:      c.UploaderName,
 			DatasetID:     c.DatasetID,
 			DatasetFolder: c.DatasetFolder,
 		},

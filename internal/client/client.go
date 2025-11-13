@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-
-	"github.com/NBISweden/submitter/internal/config"
 )
 
 type Client struct {
@@ -22,19 +20,21 @@ type Client struct {
 	HTTPClient    *http.Client
 }
 
-func New(conf config.Config) *Client {
-	slog.Info("[client] initializing client", "UseTLS", conf.UseTLS, "caCert", conf.SSLCACert)
-	var httpClient *http.Client
-	httpClient = http.DefaultClient
-	if conf.UseTLS {
+func New(configPath string) (*Client, error) {
+	conf, err := NewConfig(configPath)
+	if err != nil {
+	}
+	httpClient := http.DefaultClient
+	if conf.SSL {
 		caCert, err := os.ReadFile(conf.SSLCACert)
 		if err != nil {
-			slog.Error("error", "err", err, "file", conf.SSLCACert)
-			return nil
+			return nil, fmt.Errorf("init config: %w", err)
 		}
 
 		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
+		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
+			return nil, fmt.Errorf("read CA cert %q: %w", conf.SSLCACert, err)
+		}
 
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -44,7 +44,7 @@ func New(conf config.Config) *Client {
 		httpClient = &http.Client{Transport: tr}
 	}
 
-	return &Client{
+	client := &Client{
 		AccessToken:   conf.AccessToken,
 		APIHost:       conf.APIHost,
 		UserID:        conf.UserID,
@@ -52,6 +52,8 @@ func New(conf config.Config) *Client {
 		DatasetID:     conf.DatasetID,
 		HTTPClient:    httpClient,
 	}
+
+	return client, nil
 }
 
 func (c *Client) GetUsersFilesWithPrefix() (*http.Response, error) {
