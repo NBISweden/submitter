@@ -4,24 +4,25 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/NBISweden/submitter/internal/database"
 )
 
 type Client struct {
-	accessToken   string
-	apiHost       string
-	userID        string
-	datasetFolder string
-	datasetID     string
-	httpClient    *http.Client
+	accessToken    string
+	apiHost        string
+	userID         string
+	datasetFolder  string
+	datasetID      string
+	httpClient     *http.Client
+	postgresClient *database.PostgresDb
 }
 
 type File struct {
@@ -32,17 +33,24 @@ type File struct {
 func New(configPath string) (*Client, error) {
 	conf, err := NewConfig(configPath)
 	if err != nil {
+		return nil, err
 	}
+
+	postgresClient, err := database.New(configPath)
+	if err != nil {
+		return nil, err
+	}
+
 	httpClient := http.DefaultClient
 	if conf.ssl {
-		caCert, err := os.ReadFile(conf.sslCaCert)
+		caCert, err := os.ReadFile(conf.caCert)
 		if err != nil {
 			return nil, fmt.Errorf("init config: %w", err)
 		}
 
 		caCertPool := x509.NewCertPool()
 		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-			return nil, fmt.Errorf("read CA cert %q: %w", conf.sslCaCert, err)
+			return nil, fmt.Errorf("read CA cert %q: %w", conf.caCert, err)
 		}
 
 		tr := &http.Transport{
@@ -54,12 +62,13 @@ func New(configPath string) (*Client, error) {
 	}
 
 	client := &Client{
-		accessToken:   conf.accessToken,
-		apiHost:       conf.apiHost,
-		userID:        conf.userID,
-		datasetFolder: conf.datasetFolder,
-		datasetID:     conf.datasetID,
-		httpClient:    httpClient,
+		accessToken:    conf.accessToken,
+		apiHost:        conf.apiHost,
+		userID:         conf.userID,
+		datasetFolder:  conf.datasetFolder,
+		datasetID:      conf.datasetID,
+		httpClient:     httpClient,
+		postgresClient: postgresClient,
 	}
 
 	return client, nil
@@ -80,9 +89,17 @@ func (c *Client) GetUsersFilesWithPrefix() (*http.Response, error) {
 	return c.doRequest("GET", u.String(), nil)
 }
 
-func (c *Client) GetUsersFiles() (*http.Response, error) {
-	return c.doRequest("GET", fmt.Sprintf("users/%s/files", c.userID), nil)
+func (c *Client) GetUsersFiles() ([]*database.SubmissionFileInfo, error) {
+	f, err := c.postgresClient.GetUserFiles(c.userID, c.datasetFolder, true)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
 }
+
+// func (c *Client) GetUsersFiles() (*http.Response, error) {
+// 	return c.doRequest("GET", fmt.Sprintf("users/%s/files", c.userID), nil)
+// }
 
 func (c *Client) PostFileIngest(payload []byte) (*http.Response, error) {
 	return c.doRequest("POST", "file/ingest", payload)
@@ -139,25 +156,14 @@ func (c *Client) WaitForAccession(target int, interval time.Duration, timeout ti
 }
 
 func (c *Client) getVerifiedFilePaths() ([]string, error) {
-	response, err := c.GetUsersFiles()
+	files, err := c.GetUsersFiles()
 	if err != nil {
 		return nil, err
-	}
-	defer response.Body.Close() //nolint:errcheck
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, fmt.Errorf("[accession] failed to read response body %w", err)
-	}
-
-	var files []File
-	if err := json.Unmarshal(body, &files); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal user files: %w", err)
 	}
 
 	var paths []string
 	for _, f := range files {
-		if f.FileStatus == "verified" &&
+		if f.Status == "verified" &&
 			strings.Contains(f.InboxPath, c.datasetFolder) &&
 			!strings.Contains(f.InboxPath, "PRIVATE") {
 			paths = append(paths, f.InboxPath)

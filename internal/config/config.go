@@ -8,6 +8,8 @@ type Config struct {
 	DatasetFolder string
 	DatasetID     string
 	UserID        string
+	SSL           bool
+	CaCert        string
 }
 
 func NewConfig(configPath string) (*Config, error) {

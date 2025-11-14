@@ -23,30 +23,50 @@ spec:
           env:
             - name: USER_ID
               value: johndoe@lifescience-ri.eu
-            - name: UPLOADER_NAME
-              value: John Doe
-            - name: UPLOADER_EMAIL
-              value: uploader@email.com
             - name: DATASET_ID
               value: aa-Dataset-abc
             - name: DATASET_FOLDER
               value: DATASET_ABC
-            - name: EMAIL_ADDRESS
-              value: youremail@yourmailservice.com
-            - name: EMAIL_PASSWORD
-              value: yourpassword
-            - name: API_HOST
+            - name: CLIENT_API_HOST
               value: https://api:8080
-            - name: SMTP_HOST
-              value: yourmailservice.com
-            - name: SMTP_PORT
-              value: "587"
-            - name: ACCESS_TOKEN 
+            - name: CLIENT_ACCESS_TOKEN 
               value:
-            - name: SSL
+            - name: CLIENT_SSL
               value: "true"
-            - name: SSL_CA_CERT
+            - name: CLIENT_CA_CERT
               value: "/.secrets/tls/ca.crt"
+            - name: MAIL_UPLOADER_NAME
+              value: John Doe
+            - name: MAIL_UPLOADER:
+              value: uploader@email.com
+            - name: MAIL_ADDRESS:
+              value: yourmail@yourmailservice.com
+            - name: MAIL_PASSWORD
+              value: yourpassword
+            - name: MAIL_SMTP_HOST
+              value: yourmailservice.com
+            - name: MAIL_SMTP_PORT
+              value: "587"
+            - name: DB_HOST
+              value: "localhost"
+            - name: DB_PORT
+              value: "15432"
+            - name: DB_USER
+              value: "api"
+            - name: DB_PASSWORD
+              value: "api"
+            - name: DB_NAME
+              value: "postgres"
+            - name: DB_SCHEMA
+              value: "sda"
+            - name: DB_SSL_MODE
+              value: "disable"
+            - name: DB_CA_CERT
+              value: ""
+            - name: DB_CLIENT_CERT
+              value: ""
+            - name: DB_CLIENT_KEY
+              value: ""
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true

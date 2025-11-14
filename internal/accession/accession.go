@@ -8,7 +8,6 @@ import (
 	"io"
 	"log/slog"
 	"math/big"
-	"net/http"
 	"os"
 	"strings"
 
@@ -69,30 +68,11 @@ func CreateAccessionIDs(api *client.Client, datasetFolder string, userID string)
 	}
 	defer file.Close() //nolint:errcheck
 
-	response, err := api.GetUsersFiles()
-	if err != nil {
-		slog.Error("[accession] error when getting user files from api", "err", err)
-		return err
-	}
-	if response.StatusCode != http.StatusOK {
-		slog.Error("[accession] got non-ok response from sda api", "status_code", response.StatusCode)
-		return err
-	}
-	defer response.Body.Close() //nolint:errcheck
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-
-	var files []File
-	if err := json.Unmarshal(body, &files); err != nil {
-		return err
-	}
+	files, err := api.GetUsersFiles()
 
 	var paths []string
 	for _, f := range files {
-		if f.FileStatus == "verified" &&
+		if f.Status == "verified" &&
 			strings.Contains(f.InboxPath, datasetFolder) &&
 			!strings.Contains(f.InboxPath, "PRIVATE") {
 			paths = append(paths, f.InboxPath)

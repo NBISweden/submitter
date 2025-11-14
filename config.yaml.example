@@ -2,19 +2,33 @@
 # Application Configuration Example. Use this to populate your own config
 # ===============================
 
-# client.go
-API_HOST: "https://api.example.com"
-ACCESS_TOKEN: "youraccesstoken"
+# shared configs
 USER_ID: "user-1234"
 DATASET_ID: "aa-Dataset-abc"
 DATASET_FOLDER: "DATASET_ABC"
-SSL_CA_CERT: "/etc/ssl/certs/ca.crt"
-SSL: true
+
+# client.go
+CLIENT_API_HOST: "https://api.example.com"
+CLIENT_ACCESS_TOKEN: "youraccesstoken"
+CLIENT_CA_CERT: "/etc/ssl/certs/ca.crt"
+CLIENT_SSL: true
 
 # mail.go
-EMAIL_ADDRESS: "myemail@example.com"
-EMAIL_PASSWORD: "mypasswordemail"
-UPLOADER_EMAIL: "jane@example.com"
-UPLOADER_NAME: "Jane Doe"
-SMTP_HOST: "smtp.example.com"
-SMTP_PORT: 587
+MAIL_ADDRESS: "myemail@example.com"
+MAIL_PASSWORD: "mypasswordemail"
+MAIL_UPLOADER: "jane@example.com"
+MAIL_UPLOADER_NAME: "Jane Doe"
+MAIL_SMTP_HOST: "smtp.example.com"
+MAIL_SMTP_PORT: 587
+
+# database.go
+DB_HOST: "localhost"
+DB_PORT: "15432"
+DB_USER: "api"
+DB_PASSWORD: "api"
+DB_NAME: "postgres"
+DB_SCHEMA: "sda"
+DB_SSL_MODE: "disable"
+DB_CA_CERT: ""
+DB_CLIENT_CERT: ""
+DB_CLIENT_KEY: ""
