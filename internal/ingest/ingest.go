@@ -10,6 +10,7 @@ import (
 
 	"github.com/NBISweden/submitter/cmd"
 	"github.com/NBISweden/submitter/internal/client"
+	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -24,11 +25,15 @@ var ingestCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		conf, err := config.NewConfig(configPath)
+		if err != nil {
+			return err
+		}
 		api, err := client.New(configPath)
 		if err != nil {
 			return err
 		}
-		_, err = IngestFiles(api)
+		_, err = IngestFiles(api, conf.DatasetFolder, conf.UserID)
 		if err != nil {
 			return err
 		}
@@ -48,7 +53,7 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func IngestFiles(api *client.Client) (int, error) {
+func IngestFiles(api *client.Client, datasetFolder string, userID string) (int, error) {
 	response, err := api.GetUsersFiles()
 	if err != nil {
 		slog.Error("[ingest] error when getting user files from api", "err", err)
@@ -75,7 +80,7 @@ func IngestFiles(api *client.Client) (int, error) {
 		if f.FileStatus != "uploaded" {
 			continue
 		}
-		if !strings.Contains(f.InboxPath, api.DatasetFolder) {
+		if !strings.Contains(f.InboxPath, datasetFolder) {
 			continue
 		}
 		if strings.Contains(f.InboxPath, "PRIVATE") || strings.Contains(f.InboxPath, "LANDING PAGE") {
@@ -98,7 +103,7 @@ func IngestFiles(api *client.Client) (int, error) {
 	for _, path := range fileList {
 		payload := map[string]string{
 			"filepath": path,
-			"user":     api.UserID,
+			"user":     userID,
 		}
 		data, _ := json.Marshal(payload)
 

@@ -45,60 +45,60 @@ func init() {
 }
 
 type Mail struct {
-	SMTPHost string
-	SMTPport int
-	Email    string
-	Password string
-	From     string
-	Data     TemplateData
-	Lookup   map[string]Notifiers
+	smtpHost string
+	smtpPort int
+	email    string
+	password string
+	from     string
+	data     TemplateData
+	lookup   map[string]Notifiers
 }
 
 type TemplateData struct {
-	Uploader      string
-	DatasetID     string
-	DatasetFolder string
+	uploader      string
+	datasetID     string
+	datasetFolder string
 }
 
 type Notifiers struct {
-	Email       string
-	CC          []string
-	Template    string
-	Subject     string
-	Attachments []string
+	email       string
+	cc          []string
+	template    string
+	subject     string
+	attachments []string
 }
 
 func New(c *Config) *Mail {
 	m := &Mail{
-		SMTPHost: c.SMTPHost,
-		SMTPport: c.SMTPPort,
-		Email:    c.EmailAddress,
-		Password: c.EmailPassword,
-		From:     c.EmailAddress,
-		Data: TemplateData{
-			Uploader:      c.UploaderName,
-			DatasetID:     c.DatasetID,
-			DatasetFolder: c.DatasetFolder,
+		smtpHost: c.smtpHost,
+		smtpPort: c.smtpPort,
+		email:    c.emailAddress,
+		password: c.emailPassword,
+		from:     c.emailAddress,
+		data: TemplateData{
+			uploader:      c.uploaderName,
+			datasetID:     c.datasetID,
+			datasetFolder: c.datasetFolder,
 		},
-		Lookup: map[string]Notifiers{
+		lookup: map[string]Notifiers{
 			"Submitter": {
-				Email:       c.UploaderEmail,
-				Template:    "notify-submitter.html",
-				Subject:     "Successful Ingestion of Your Dataset Submission",
-				Attachments: []string{fmt.Sprintf("/data/%s-stableIDs.txt", c.DatasetFolder)},
+				email:       c.uploaderEmail,
+				template:    "notify-submitter.html",
+				subject:     "Successful Ingestion of Your Dataset Submission",
+				attachments: []string{fmt.Sprintf("/data/%s-stableIDs.txt", c.datasetFolder)},
 			},
 			"BigPicture": {
-				Email:       "submit@bigpicture.eu",
-				Template:    "notify-bigpicture.html",
-				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
-				Attachments: []string{"/data/dataset.txt", "data/policy.txt"},
+				email:       "submit@bigpicture.eu",
+				template:    "notify-bigpicture.html",
+				subject:     fmt.Sprintf("Dataset %s has been ingested", c.datasetFolder),
+				attachments: []string{"/data/dataset.txt", "data/policy.txt"},
 			},
 			"Minttu": {
-				Email:       "minttu.sauramo@hus.fi",
-				CC:          []string{"jarno.laitinen@csc.fi"},
-				Template:    "notify-minttu.html",
-				Subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
-				Attachments: []string{"/data/dataset.txt", "data/rems.txt", "data/policy.txt"},
+				email:       "minttu.sauramo@hus.fi",
+				cc:          []string{"jarno.laitinen@csc.fi"},
+				template:    "notify-minttu.html",
+				subject:     fmt.Sprintf("Dataset %s has been ingested", c.datasetFolder),
+				attachments: []string{"/data/dataset.txt", "data/rems.txt", "data/policy.txt"},
 			},
 		},
 	}
@@ -107,7 +107,7 @@ func New(c *Config) *Mail {
 
 func (mail *Mail) send(subject string, message string, reciever string, attachements []string, ccs []string) error {
 	m := gomail.NewMessage()
-	m.SetHeader("From", mail.From)
+	m.SetHeader("From", mail.from)
 	m.SetHeader("To", reciever)
 	m.SetHeader("Subject", subject)
 
@@ -129,24 +129,24 @@ func (mail *Mail) send(subject string, message string, reciever string, attachem
 		m.Attach(file)
 	}
 
-	d := gomail.NewDialer(mail.SMTPHost, mail.SMTPport, mail.Email, mail.Password)
+	d := gomail.NewDialer(mail.smtpHost, mail.smtpPort, mail.email, mail.password)
 	slog.Info("[mail] notification sent about dataset completion", "reciever", reciever)
 	return d.DialAndSend(m)
 }
 
 func (mail *Mail) Notify(notifier string, dryRun bool) error {
-	htmlBody, err := renderTemplate(mail.Lookup[notifier].Template, mail.Data)
+	htmlBody, err := renderTemplate(mail.lookup[notifier].template, mail.data)
 	if err != nil {
 		return fmt.Errorf("failed to render mail template: %v", err)
 	}
 
 	if dryRun {
-		slog.Info(fmt.Sprintf("[mail] dry-run enabled, using <%s> instead of <%s>", mail.Email, mail.Lookup[notifier].Email))
-		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Email, mail.Lookup[notifier].Attachments, nil)
+		slog.Info(fmt.Sprintf("[mail] dry-run enabled, using <%s> instead of <%s>", mail.email, mail.lookup[notifier].email))
+		err = mail.send(mail.lookup[notifier].subject, htmlBody, mail.email, mail.lookup[notifier].attachments, nil)
 	}
 
 	if !dryRun {
-		err = mail.send(mail.Lookup[notifier].Subject, htmlBody, mail.Lookup[notifier].Email, mail.Lookup[notifier].Attachments, mail.Lookup[notifier].CC)
+		err = mail.send(mail.lookup[notifier].subject, htmlBody, mail.lookup[notifier].email, mail.lookup[notifier].attachments, mail.lookup[notifier].cc)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to send mail notification %v", err)

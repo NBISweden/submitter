@@ -14,6 +14,7 @@ import (
 	"github.com/NBISweden/submitter/cmd"
 	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/client"
+	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -29,11 +30,15 @@ var datasetCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		conf, err := config.NewConfig(configPath)
+		if err != nil {
+			return err
+		}
 		api, err := client.New(configPath)
 		if err != nil {
 			return err
 		}
-		err = CreateDataset(api)
+		err = CreateDataset(api, conf.DatasetFolder, conf.DatasetID, conf.UserID)
 		if err != nil {
 			return err
 		}
@@ -62,16 +67,16 @@ type UserFiles struct {
 	InboxPath   string `json:"inboxPath"`
 }
 
-func CreateDataset(api *client.Client) error {
+func CreateDataset(api *client.Client, datasetFolder string, datasetID string, userID string) error {
 	if !dryRun {
-		err := createStableIDsFile(api)
+		err := createStableIDsFile(api, datasetFolder)
 		if err != nil {
 			slog.Error("[dataset] failed to create file with stable ids")
 		}
 	}
 
 	var fileIDsList []string
-	filePath := helpers.GetFileIDsPath(dataDirectory, api.DatasetFolder)
+	filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -90,7 +95,7 @@ func CreateDataset(api *client.Client) error {
 	}
 
 	if len(fileIDsList) > 100 {
-		err := sendInChunks(fileIDsList, api)
+		err := sendInChunks(fileIDsList, api, datasetID, userID)
 		if err != nil {
 			return err
 		}
@@ -99,8 +104,8 @@ func CreateDataset(api *client.Client) error {
 	if len(fileIDsList) <= 100 {
 		payload := Payload{
 			AccessionIDs: fileIDsList,
-			DatasetID:    api.DatasetID,
-			User:         api.UserID,
+			DatasetID:    datasetID,
+			User:         userID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
@@ -125,15 +130,15 @@ func CreateDataset(api *client.Client) error {
 	return nil
 }
 
-func sendInChunks(fileIDsList []string, api *client.Client) error {
+func sendInChunks(fileIDsList []string, api *client.Client, datasetID string, userID string) error {
 	slog.Info("[dataset] more than 100 entries, sending in chunks of 100")
 	chunks := slices.Chunk(fileIDsList, 100)
 	allChunks := slices.Collect(chunks)
 	for _, chunk := range allChunks {
 		payload := Payload{
 			AccessionIDs: chunk,
-			DatasetID:    api.DatasetID,
-			User:         api.UserID,
+			DatasetID:    datasetID,
+			User:         userID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
@@ -157,8 +162,8 @@ func sendInChunks(fileIDsList []string, api *client.Client) error {
 	return nil
 }
 
-func createStableIDsFile(api *client.Client) error {
-	filePath := helpers.GetStableIDsPath(dataDirectory, api.DatasetFolder)
+func createStableIDsFile(api *client.Client, datasetFolder string) error {
+	filePath := helpers.GetStableIDsPath(dataDirectory, datasetFolder)
 	if _, err := os.Stat(filePath); err == nil {
 		return ErrFileAlreadyExists
 	} else if !os.IsNotExist(err) {
