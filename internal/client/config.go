@@ -12,7 +12,7 @@ type Config struct {
 	apiHost       string
 	accessToken   string
 	ssl           bool
-	sslCaCert     string
+	caCert        string
 }
 
 func NewConfig(configPath string) (*Config, error) {
@@ -24,13 +24,13 @@ func NewConfig(configPath string) (*Config, error) {
 	v.ReadInConfig()
 
 	cfg := &Config{
-		apiHost:       v.GetString("API_HOST"),
 		userID:        globalConfig.UserID,
 		datasetID:     globalConfig.DatasetFolder,
 		datasetFolder: globalConfig.DatasetFolder,
-		accessToken:   v.GetString("ACCESS_TOKEN"),
-		ssl:           v.GetBool("SSL"),
-		sslCaCert:     v.GetString("SSL_CA_CERT"),
+		apiHost:       v.GetString("CLIENT_API_HOST"),
+		accessToken:   v.GetString("CLIENT_ACCESS_TOKEN"),
+		ssl:           v.GetBool("CLIENT_SSL"),
+		caCert:        v.GetString("CLIENT_CA_CERT"),
 	}
 
 	return cfg, nil

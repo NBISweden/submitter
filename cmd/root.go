@@ -5,9 +5,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "submitter",
-	Short: "Runs dataset submissions",
-	Long:  `Runs dataset submissions`,
+	Use:          "submitter",
+	Short:        "Runs dataset submissions",
+	Long:         `Runs dataset submissions`,
+	SilenceUsage: true,
 }
 
 func Execute() error {
