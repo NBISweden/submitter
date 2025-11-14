@@ -15,12 +15,14 @@ import (
 	"github.com/NBISweden/submitter/cmd"
 	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/client"
+	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/cobra"
 )
 
 var dryRun bool
 var configPath string
 var dataDirectory string
+var datasetFolder string
 
 var accessionCmd = &cobra.Command{
 	Use:   "accession [flags]",
@@ -30,8 +32,12 @@ var accessionCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		conf, err := config.NewConfig(configPath)
+		if err != nil {
+			return err
+		}
 		api, err := client.New(configPath)
-		err = CreateAccessionIDs(api)
+		err = CreateAccessionIDs(api, conf.DatasetFolder, conf.UserID)
 		if err != nil {
 			return err
 		}
@@ -54,8 +60,8 @@ type File struct {
 	FileStatus string `json:"fileStatus"`
 }
 
-func CreateAccessionIDs(api *client.Client) error {
-	filePath := helpers.GetFileIDsPath(dataDirectory, api.DatasetFolder)
+func CreateAccessionIDs(api *client.Client, datasetFolder string, userID string) error {
+	filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
 	file, err := createFileIDFile(filePath, dryRun)
 	if err != nil {
 		slog.Error("[accession] error occoured when trying to create file", "filePath", filePath)
@@ -87,7 +93,7 @@ func CreateAccessionIDs(api *client.Client) error {
 	var paths []string
 	for _, f := range files {
 		if f.FileStatus == "verified" &&
-			strings.Contains(f.InboxPath, api.DatasetFolder) &&
+			strings.Contains(f.InboxPath, datasetFolder) &&
 			!strings.Contains(f.InboxPath, "PRIVATE") {
 			paths = append(paths, f.InboxPath)
 		}
@@ -108,7 +114,7 @@ func CreateAccessionIDs(api *client.Client) error {
 		payload, err := json.Marshal(map[string]string{
 			"accession_id": accessionID,
 			"filepath":     filepath,
-			"user":         api.UserID,
+			"user":         userID,
 		})
 		if err != nil {
 			return err

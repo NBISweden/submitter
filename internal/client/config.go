@@ -1,20 +1,22 @@
 package client
 
 import (
+	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	UserID        string
-	DatasetID     string
-	DatasetFolder string
-	APIHost       string
-	AccessToken   string
-	SSL           bool
-	SSLCACert     string
+	userID        string
+	datasetID     string
+	datasetFolder string
+	apiHost       string
+	accessToken   string
+	ssl           bool
+	sslCaCert     string
 }
 
 func NewConfig(configPath string) (*Config, error) {
+	globalConfig, _ := config.NewConfig(configPath)
 	v := viper.New()
 	v.AutomaticEnv()
 	v.SetConfigFile(configPath)
@@ -22,13 +24,13 @@ func NewConfig(configPath string) (*Config, error) {
 	v.ReadInConfig()
 
 	cfg := &Config{
-		APIHost:       v.GetString("API_HOST"),
-		UserID:        v.GetString("USER_ID"),
-		DatasetID:     v.GetString("DATASET_ID"),
-		DatasetFolder: v.GetString("DATASET_FOLDER"),
-		AccessToken:   v.GetString("ACCESS_TOKEN"),
-		SSL:           v.GetBool("SSL"),
-		SSLCACert:     v.GetString("SSL_CA_CERT"),
+		apiHost:       v.GetString("API_HOST"),
+		userID:        globalConfig.UserID,
+		datasetID:     globalConfig.DatasetFolder,
+		datasetFolder: globalConfig.DatasetFolder,
+		accessToken:   v.GetString("ACCESS_TOKEN"),
+		ssl:           v.GetBool("SSL"),
+		sslCaCert:     v.GetString("SSL_CA_CERT"),
 	}
 
 	return cfg, nil

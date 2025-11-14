@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/NBISweden/submitter/cmd"
-	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/accession"
 	"github.com/NBISweden/submitter/internal/client"
+	"github.com/NBISweden/submitter/internal/config"
 	"github.com/NBISweden/submitter/internal/dataset"
 	"github.com/NBISweden/submitter/internal/ingest"
 	"github.com/spf13/cobra"
@@ -34,20 +34,28 @@ func init() {
 }
 
 func runJob() error {
+	conf, err := config.NewConfig(configPath)
+	if err != nil {
+		return err
+	}
+
+	datasetFolder := conf.DatasetFolder
+	datasetID := conf.DatasetID
+	userID := conf.UserID
+
 	api, err := client.New(configPath)
 	if err != nil {
 		return err
 	}
-	filesCount, err := ingest.IngestFiles(api)
+	filesCount, err := ingest.IngestFiles(api, datasetFolder, userID)
 	if err != nil {
 		return err
 	}
-	//TODO: Look at this logic. Goal: remove the part where we store data on disk, keep it in memory for the job
-	_, err = helpers.WaitForAccession(api, filesCount, 5*time.Minute, 24*time.Hour)
+	_, err = api.WaitForAccession(filesCount, 5*time.Minute, 24*time.Hour)
 	if err != nil {
 		return err
 	}
-	err = accession.CreateAccessionIDs(api)
+	err = accession.CreateAccessionIDs(api, datasetFolder, userID)
 	if err != nil {
 		return err
 	}
@@ -57,11 +65,11 @@ func runJob() error {
 	slog.Info("[job] waiting before sending dataset creation request", "delay", waitTime)
 	time.Sleep(waitTime)
 
-	err = dataset.CreateDataset(api)
+	err = dataset.CreateDataset(api, datasetFolder, datasetID, userID)
 	if err != nil {
 		return err
 	}
 
-	slog.Info("[job] dataset submission %s completed!", "datasetID", api.DatasetID)
+	slog.Info("dataset submission completed!")
 	return nil
 }
