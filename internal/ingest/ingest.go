@@ -54,30 +54,14 @@ type File struct {
 }
 
 func IngestFiles(api *client.Client, datasetFolder string, userID string) (int, error) {
-	response, err := api.GetUsersFiles()
+	files, err := api.GetUsersFiles()
 	if err != nil {
-		slog.Error("[ingest] error when getting user files from api", "err", err)
-		return 0, err
-	}
-	if response.StatusCode != http.StatusOK {
-		slog.Error("[ingest] got non-ok response from sda api", "status_code", response.StatusCode)
-		return 0, err
-	}
-	defer response.Body.Close() //nolint:errcheck
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return 0, err
-	}
-
-	var files []File
-	if err := json.Unmarshal(body, &files); err != nil {
 		return 0, err
 	}
 
 	var fileList []string
 	for _, f := range files {
-		if f.FileStatus != "uploaded" {
+		if f.Status != "uploaded" {
 			continue
 		}
 		if !strings.Contains(f.InboxPath, datasetFolder) {
@@ -107,7 +91,7 @@ func IngestFiles(api *client.Client, datasetFolder string, userID string) (int, 
 		}
 		data, _ := json.Marshal(payload)
 
-		response, err = api.PostFileIngest(data)
+		response, err := api.PostFileIngest(data)
 		if err != nil {
 			return filesCount, err
 		}

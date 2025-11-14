@@ -82,7 +82,7 @@ func New(c *Config) *Mail {
 		},
 		lookup: map[string]Notifiers{
 			"Submitter": {
-				email:       c.uploaderEmail,
+				email:       c.uploaderMail,
 				template:    "notify-submitter.html",
 				subject:     "Successful Ingestion of Your Dataset Submission",
 				attachments: []string{fmt.Sprintf("/data/%s-stableIDs.txt", c.datasetFolder)},

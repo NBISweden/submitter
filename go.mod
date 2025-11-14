@@ -3,6 +3,7 @@ module github.com/NBISweden/submitter
 go 1.24.3
 
 require (
+	github.com/lib/pq v1.10.9
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
