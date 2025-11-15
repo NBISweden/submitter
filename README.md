@@ -16,22 +16,6 @@ Commands must be one of:
 - `mail`
 - `job`
 
-#### ingestion
-
-TODO: Describe this
-
-#### accession
-
-TODO: Describe this
-
-#### dataset
-
-TODO: Describe this
-
-#### job
-
-TODO: Describe this
-
 ### configuration
 
 submitter can consume configuration from either `config.yaml` or from environment variables. If both are supplied then the environment variables will take priority. If using config.yaml it is expected to be located in the root directory of the project
