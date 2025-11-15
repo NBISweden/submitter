@@ -25,11 +25,6 @@ type Client struct {
 	postgresClient *database.PostgresDb
 }
 
-type File struct {
-	InboxPath  string `json:"inboxPath"`
-	FileStatus string `json:"fileStatus"`
-}
-
 func New(configPath string) (*Client, error) {
 	conf, err := NewConfig(configPath)
 	if err != nil {
@@ -96,10 +91,6 @@ func (c *Client) GetUsersFiles() ([]*database.SubmissionFileInfo, error) {
 	}
 	return f, nil
 }
-
-// func (c *Client) GetUsersFiles() (*http.Response, error) {
-// 	return c.doRequest("GET", fmt.Sprintf("users/%s/files", c.userID), nil)
-// }
 
 func (c *Client) PostFileIngest(payload []byte) (*http.Response, error) {
 	return c.doRequest("POST", "file/ingest", payload)
