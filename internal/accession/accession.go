@@ -52,14 +52,7 @@ func init() {
 	accessionCmd.Flags().StringVar(&dataDirectory, "data-directory", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
 }
 
-var ErrFileAlreadyExists = errors.New("file already exists")
-
-type File struct {
-	InboxPath  string `json:"inboxPath"`
-	FileStatus string `json:"fileStatus"`
-}
-
-func CreateAccessionIDs(api *client.Client, datasetFolder string, userID string) error {
+func CreateAccessionIDs(api client.APIClient, datasetFolder string, userID string) error {
 	filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
 	file, err := createFileIDFile(filePath, dryRun)
 	if err != nil {
@@ -125,7 +118,7 @@ func createFileIDFile(fileIDPath string, dryrun bool) (*os.File, error) {
 	}
 
 	if _, err := os.Stat(fileIDPath); err == nil {
-		return nil, ErrFileAlreadyExists
+		return nil, fmt.Errorf("file already exists")
 	} else if !os.IsNotExist(err) {
 		return nil, err
 	}
