@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log/slog"
 	"os"
 
 	"github.com/NBISweden/submitter/cmd"
@@ -11,7 +12,10 @@ import (
 	_ "github.com/NBISweden/submitter/internal/mail"
 )
 
+var version = "v1.0.0"
+
 func main() {
+	slog.Info("running", "version", version)
 	err := cmd.Execute()
 	if err != nil {
 		os.Exit(1)
