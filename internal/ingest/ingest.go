@@ -11,17 +11,11 @@ import (
 	"github.com/NBISweden/submitter/cmd"
 	"github.com/NBISweden/submitter/internal/client"
 	"github.com/NBISweden/submitter/internal/config"
-	"github.com/NBISweden/submitter/internal/database"
 	"github.com/spf13/cobra"
 )
 
 var dryRun bool
 var configPath string
-
-type APIClient interface {
-	GetUsersFiles() ([]*database.SubmissionFileInfo, error)
-	PostFileIngest([]byte) (*http.Response, error)
-}
 
 var ingestCmd = &cobra.Command{
 	Use:   "ingest [flags]",
@@ -54,7 +48,7 @@ func init() {
 	ingestCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
 }
 
-func IngestFiles(api APIClient, datasetFolder string, userID string) (int, error) {
+func IngestFiles(api client.APIClient, datasetFolder string, userID string) (int, error) {
 	files, err := api.GetUsersFiles()
 	if err != nil {
 		return 0, err

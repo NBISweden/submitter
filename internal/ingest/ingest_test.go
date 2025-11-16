@@ -12,35 +12,44 @@ import (
 
 type mockClient struct {
 	FilesToReturn []*database.SubmissionFileInfo
-	Responses     []*http.Response
+	Response      *http.Response
 	CallIndex     int
 }
 
-func setup(user string, datasetFolder string) *mockClient {
+func (m *mockClient) GetUsersFiles() ([]*database.SubmissionFileInfo, error) {
+	return m.FilesToReturn, nil
+}
+
+func (m *mockClient) PostFileIngest(data []byte) (*http.Response, error) {
+	return m.Response, nil
+}
+
+func (m *mockClient) PostFileAccession(payload []byte) (*http.Response, error) {
+	return m.Response, nil
+}
+
+func setup(userID string, datasetFolder string) *mockClient {
 	mock := &mockClient{
 		FilesToReturn: []*database.SubmissionFileInfo{
-			{InboxPath: fmt.Sprintf("/%s/%s/file1.c4gh", user, datasetFolder), Status: "uploaded"},
-			{InboxPath: fmt.Sprintf("/%s/%s/file2.c4gh", user, datasetFolder), Status: "uploaded"},
+			{InboxPath: fmt.Sprintf("/%s/%s/file1.c4gh", userID, datasetFolder), Status: "uploaded"},
+			{InboxPath: fmt.Sprintf("/%s/%s/file2.c4gh", userID, datasetFolder), Status: "uploaded"},
 			{InboxPath: fmt.Sprintf("/someuser/%s/file3.c4gh", datasetFolder), Status: "uploaded"},
-			{InboxPath: fmt.Sprintf("/%s/PRIVATE/%s/file4.c4gh", user, datasetFolder), Status: "uploaded"},
-			{InboxPath: fmt.Sprintf("/%s/%s/file5.c4gh", user, datasetFolder), Status: "error"},
+			{InboxPath: fmt.Sprintf("/%s/PRIVATE/%s/file4.c4gh", userID, datasetFolder), Status: "uploaded"},
+			{InboxPath: fmt.Sprintf("/%s/%s/file5.c4gh", userID, datasetFolder), Status: "error"},
 		},
-		Responses: []*http.Response{
-			{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString("ok"))},
-			{StatusCode: http.StatusInternalServerError, Body: io.NopCloser(bytes.NewBufferString("fail"))},
-		},
+		Response: &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString("ok"))},
 	}
 	return mock
 }
 
 func TestIngest(t *testing.T) {
-	user := "testuser"
+	userID := "testuser"
 	datasetFolder := "DATASET_TEST"
 	expectedFiles := 2
-	mock := setup(user, datasetFolder)
+	mock := setup(userID, datasetFolder)
 
-	t.Run("Test GetUsersFiles", func(t *testing.T) {
-		files, err := IngestFiles(mock, user, datasetFolder)
+	t.Run("Test Ingest", func(t *testing.T) {
+		files, err := IngestFiles(mock, userID, datasetFolder)
 		if err != nil {
 			t.Fail()
 		}
@@ -50,17 +59,4 @@ func TestIngest(t *testing.T) {
 		}
 		t.Logf("ingested %d/%d files sucessfully", files, expectedFiles)
 	})
-}
-
-func (m *mockClient) GetUsersFiles() ([]*database.SubmissionFileInfo, error) {
-	return m.FilesToReturn, nil
-}
-
-func (m *mockClient) PostFileIngest(data []byte) (*http.Response, error) {
-	if m.CallIndex >= len(m.Responses) {
-		return nil, nil
-	}
-	resp := m.Responses[m.CallIndex]
-	m.CallIndex++
-	return resp, nil
 }
