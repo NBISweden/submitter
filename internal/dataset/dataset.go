@@ -68,10 +68,11 @@ type UserFiles struct {
 }
 
 func CreateDataset(api *client.Client, datasetFolder string, datasetID string, userID string) error {
+	slog.Info("starting dataset")
 	if !dryRun {
 		err := createStableIDsFile(api, datasetFolder)
 		if err != nil {
-			slog.Error("[dataset] failed to create file with stable ids")
+			slog.Error("failed to create file with stable ids")
 		}
 	}
 
@@ -83,14 +84,14 @@ func CreateDataset(api *client.Client, datasetFolder string, datasetID string, u
 	}
 	defer file.Close() //nolint:errcheck
 
-	slog.Info("[dataset] reading", "filePath", filePath)
+	slog.Info("reading", "filePath", filePath)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		fileIDsList = append(fileIDsList, scanner.Text())
 	}
-	slog.Info("[dataset] nr of files included in dataset", "nr_files", (len(fileIDsList)))
+	slog.Info("nr of files included in dataset", "nr_files", (len(fileIDsList)))
 	if dryRun {
-		slog.Info("[dataset] dry-run enabled, no dataset will be created")
+		slog.Info("dry-run enabled, no dataset will be created")
 		return nil
 	}
 
@@ -121,17 +122,17 @@ func CreateDataset(api *client.Client, datasetFolder string, datasetID string, u
 			}
 		}
 		if response.StatusCode != http.StatusOK {
-			slog.Warn("[dataset] got non-ok response", "status_code", response.StatusCode)
+			slog.Warn("got non-ok response", "status_code", response.StatusCode)
 		}
 		defer response.Body.Close() //nolint:errcheck
 	}
 
-	slog.Info("[dataset] creation of dataset completed!")
+	slog.Info("creation of dataset completed!")
 	return nil
 }
 
 func sendInChunks(fileIDsList []string, api *client.Client, datasetID string, userID string) error {
-	slog.Info("[dataset] more than 100 entries, sending in chunks of 100")
+	slog.Info("more than 100 entries, sending in chunks of 100")
 	chunks := slices.Chunk(fileIDsList, 100)
 	allChunks := slices.Collect(chunks)
 	for _, chunk := range allChunks {
@@ -155,7 +156,7 @@ func sendInChunks(fileIDsList []string, api *client.Client, datasetID string, us
 			return err
 		}
 		if response.StatusCode != http.StatusOK {
-			slog.Warn("[dataset] got non-ok response", "status_code", response.StatusCode)
+			slog.Warn("got non-ok response", "status_code", response.StatusCode)
 		}
 		defer response.Body.Close() //nolint:errcheck
 	}
@@ -194,6 +195,6 @@ func createStableIDsFile(api *client.Client, datasetFolder string) error {
 		fmt.Fprintf(file, "%s %s\n", f.AccessionID, f.InboxPath) //nolint:errcheck
 	}
 
-	slog.Info("[dataset] created file with stable ids", "filePath", filePath)
+	slog.Info("created file with stable ids", "filePath", filePath)
 	return nil
 }

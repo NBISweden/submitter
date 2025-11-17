@@ -53,10 +53,11 @@ func init() {
 }
 
 func CreateAccessionIDs(api client.APIClient, datasetFolder string, userID string) error {
+	slog.Info("starting accession")
 	filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
 	file, err := createFileIDFile(filePath, dryRun)
 	if err != nil {
-		slog.Error("[accession] error occoured when trying to create file", "filePath", filePath)
+		slog.Error("error occoured when trying to create file", "filePath", filePath)
 		return err
 	}
 	defer file.Close() //nolint:errcheck
@@ -71,10 +72,10 @@ func CreateAccessionIDs(api client.APIClient, datasetFolder string, userID strin
 			paths = append(paths, f.InboxPath)
 		}
 	}
-	slog.Info("[accession] files found for accession id creation", "files_found", len(paths))
+	slog.Info("files found for accession id creation", "files_found", len(paths))
 
 	if dryRun {
-		slog.Info("[accession] dry-run enabled, no files will be given accession ids")
+		slog.Info("dry-run enabled, no files will be given accession ids")
 		return nil
 	}
 
@@ -107,7 +108,7 @@ func CreateAccessionIDs(api client.APIClient, datasetFolder string, userID strin
 		}
 	}
 
-	slog.Info("[accession] accession IDs assigned", "nr_files", len(paths))
+	slog.Info("accession IDs assigned", "nr_files", len(paths))
 
 	return nil
 }
