@@ -49,6 +49,7 @@ func init() {
 }
 
 func IngestFiles(api client.APIClient, datasetFolder string, userID string) (int, error) {
+	slog.Info("starting ingest")
 	files, err := api.GetUsersFiles()
 	if err != nil {
 		return 0, err
@@ -56,7 +57,7 @@ func IngestFiles(api client.APIClient, datasetFolder string, userID string) (int
 
 	var fileList []string
 	for _, f := range files {
-		if f.Status != "uploaded" {
+		if f.Status != "uploaded"{
 			continue
 		}
 		if !strings.Contains(f.InboxPath, datasetFolder) {
@@ -69,9 +70,9 @@ func IngestFiles(api client.APIClient, datasetFolder string, userID string) (int
 	}
 
 	filesCount := len(fileList)
-	slog.Info("[ingest] number of files to ingest", "filesCount", filesCount)
+	slog.Info("number of files to ingest", "filesCount", filesCount)
 	if dryRun {
-		slog.Info("[ingest] dry-run enabled. No files will be ingested")
+		slog.Info("dry-run enabled. No files will be ingested")
 		return filesCount, nil
 	}
 
@@ -105,17 +106,17 @@ func IngestFiles(api client.APIClient, datasetFolder string, userID string) (int
 	}
 
 	if len(resendPayloads) != 0 {
-		slog.Warn("[ingest] found non-ok responds from SDA API", "non-oks", len(resendPayloads))
+		slog.Warn("found non-ok responds from SDA API", "non-oks", len(resendPayloads))
 		countResponds := make(map[int]int)
 		for _, code := range nonOKResponds {
 			countResponds[code]++
 		}
 
 		for code, count := range countResponds {
-			slog.Info("[ingest] non-ok responds", "count", count, "code", code)
+			slog.Info("non-ok responds", "count", count, "code", code)
 		}
 	}
 
-	slog.Info(fmt.Sprintf("[ingest] starting ingestion for %d/%d successful responses", len(okResponds), filesCount))
+	slog.Info(fmt.Sprintf("starting ingestion for %d/%d successful responses", len(okResponds), filesCount))
 	return filesCount, nil
 }

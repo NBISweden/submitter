@@ -118,6 +118,7 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 		url := fmt.Sprintf("%s/%s", c.apiHost, path)
 		req, err = http.NewRequest(method, url, bytes.NewReader(body))
 		if err != nil {
+			slog.Warn("client new request err", "err", err)
 			return err
 		}
 
@@ -129,16 +130,14 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 		slog.Info("request", "method", method, "url", url)
 		resp, err = c.httpClient.Do(req)
 		if err != nil {
+			slog.Warn("client do err", "err", err)
 			return err
 		}
 		return nil
 	}, backoff.NewExponentialBackOff())
 
-	if err != nil {
-		return resp, err
-	}
 	slog.Info("response", "status", resp.Status)
-	return resp, nil
+	return resp, err
 }
 
 func (c *Client) WaitForAccession(target int, interval time.Duration, timeout time.Duration) ([]string, error) {
@@ -156,7 +155,7 @@ func (c *Client) WaitForAccession(target int, interval time.Duration, timeout ti
 		if time.Now().After(deadline) {
 			return nil, fmt.Errorf("timeout reached, only got %d/%d files", len(paths), target)
 		}
-		slog.Info(fmt.Sprintf("[accession] found %d/%d files - waiting: internal: %s timeout: %s", len(paths), target, interval, timeout))
+		slog.Info(fmt.Sprintf("found %d/%d files - waiting: internal: %s timeout: %s", len(paths), target, interval, timeout))
 		time.Sleep(interval)
 	}
 }

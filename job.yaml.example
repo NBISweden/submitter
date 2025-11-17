@@ -37,9 +37,9 @@ spec:
               value: "/.secrets/tls/ca.crt"
             - name: MAIL_UPLOADER_NAME
               value: John Doe
-            - name: MAIL_UPLOADER:
+            - name: MAIL_UPLOADER
               value: uploader@email.com
-            - name: MAIL_ADDRESS:
+            - name: MAIL_ADDRESS
               value: yourmail@yourmailservice.com
             - name: MAIL_PASSWORD
               value: yourpassword
