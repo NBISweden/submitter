@@ -38,6 +38,7 @@ func New(configPath string) (*Client, error) {
 	}
 
 	httpClient := http.DefaultClient
+	slog.Info("transport encryption", "ssl", conf.ssl)
 	if conf.ssl {
 		caCert, err := os.ReadFile(conf.caCert)
 		if err != nil {
