@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/NBISweden/submitter/internal/database"
+	"github.com/cenkalti/backoff/v4"
 )
 
 type Client struct {
@@ -85,11 +86,16 @@ func (c *Client) GetUsersFilesWithPrefix() (*http.Response, error) {
 }
 
 func (c *Client) GetUsersFiles() ([]*database.SubmissionFileInfo, error) {
-	f, err := c.postgresClient.GetUserFiles(c.userID, c.datasetFolder, true)
+	var files []*database.SubmissionFileInfo
+	err := backoff.Retry(func() error {
+		var err error
+		files, err = c.postgresClient.GetUserFiles(c.userID, c.datasetFolder, true)
+		return err
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		return nil, err
 	}
-	return f, nil
+	return files, nil
 }
 
 func (c *Client) PostFileIngest(payload []byte) (*http.Response, error) {
@@ -105,24 +111,33 @@ func (c *Client) PostDatasetCreate(payload []byte) (*http.Response, error) {
 }
 
 func (c *Client) doRequest(method, path string, body []byte) (*http.Response, error) {
-	url := fmt.Sprintf("%s/%s", c.apiHost, path)
-	req, err := http.NewRequest(method, url, bytes.NewReader(body))
-	slog.Info("[client] calling", "method", method, "url", url)
+	var req *http.Request
+	var resp *http.Response
+	err := backoff.Retry(func() error {
+		var err error
+		url := fmt.Sprintf("%s/%s", c.apiHost, path)
+		req, err = http.NewRequest(method, url, bytes.NewReader(body))
+		if err != nil {
+			return err
+		}
+
+		req.Header.Set("Authorization", "Bearer "+c.accessToken)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+
+		slog.Info("request", "method", method, "url", url)
+		resp, err = c.httpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		return nil
+	}, backoff.NewExponentialBackOff())
+
 	if err != nil {
-		return nil, err
+		return resp, err
 	}
-
-	req.Header.Set("Authorization", "Bearer "+c.accessToken)
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	slog.Info("[client] response", "status", resp.Status)
+	slog.Info("response", "status", resp.Status)
 	return resp, nil
 }
 
