@@ -45,8 +45,6 @@ func (c *Config) dataSourceName() string {
 	connInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		c.host, c.port, c.user, c.password, c.databaseName, c.sslMode)
 
-	fmt.Println("connInfo: ", connInfo)
-
 	if c.sslMode == "disable" {
 		return connInfo
 	}
