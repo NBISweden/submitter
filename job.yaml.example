@@ -21,20 +21,22 @@ spec:
           imagePullPolicy: Always
           args: ["job"]
           env:
+            - name: JOB_TIMEOUT
+              value: 4320 # 4320 minutes = 72 hours
+            - name: JOB_POLL_RATE
+              value: 180 # 180 minutes = 3 hours
             - name: USER_ID
               value: johndoe@lifescience-ri.eu
             - name: DATASET_ID
               value: aa-Dataset-abc
             - name: DATASET_FOLDER
               value: DATASET_ABC
+            - name: SSL_CA_CERT
+              value: "/.secrets/tls/ca.crt"
             - name: CLIENT_API_HOST
               value: https://api:8080
             - name: CLIENT_ACCESS_TOKEN 
               value:
-            - name: CLIENT_SSL
-              value: "true"
-            - name: CLIENT_CA_CERT
-              value: "/.secrets/tls/ca.crt"
             - name: MAIL_UPLOADER_NAME
               value: John Doe
             - name: MAIL_UPLOADER

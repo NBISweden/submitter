@@ -1,6 +1,7 @@
 package job
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -34,14 +35,18 @@ func init() {
 }
 
 func runJob() error {
-	conf, err := config.NewConfig(configPath)
+	globalConf, err := config.NewConfig(configPath)
 	if err != nil {
 		return err
 	}
 
-	datasetFolder := conf.DatasetFolder
-	datasetID := conf.DatasetID
-	userID := conf.UserID
+	pollRate := time.Minute * time.Duration(globalConf.PollRate)
+	timeout := time.Minute * time.Duration(globalConf.Timeout)
+	datasetFolder := globalConf.DatasetFolder
+	datasetID := globalConf.DatasetID
+	userID := globalConf.UserID
+
+	slog.Info("dispatching job", "dataset_folder", datasetFolder, "dataset_id", datasetID, "userID", userID)
 
 	api, err := client.New(configPath)
 	if err != nil {
@@ -51,21 +56,21 @@ func runJob() error {
 	if err != nil {
 		return err
 	}
-	_, err = api.WaitForAccession(filesCount, 5*time.Minute, 24*time.Hour)
+	_, err = api.WaitForAccession(filesCount, pollRate, timeout)
 	if err != nil {
 		return err
 	}
-	err = accession.CreateAccessionIDs(api, datasetFolder, userID)
+	accessionIDs, err := accession.Accession(api, datasetFolder, userID)
 	if err != nil {
 		return err
 	}
 
-	// We give some time for the SDA backend to process our accession ids. During test-runs it's been fine with 2 minutes
-	waitTime := 2 * time.Minute
-	slog.Info("[job] waiting before sending dataset creation request", "delay", waitTime)
+	// We give some time for the SDA backend to process our accession ids. During test-runs it's been fine with 10 minutes
+	waitTime := 10 * time.Minute
+	slog.Info("waiting before sending dataset creation request", "delay", waitTime)
 	time.Sleep(waitTime)
 
-	err = dataset.CreateDataset(api, datasetFolder, datasetID, userID)
+	err = dataset.Dataset(api, datasetFolder, datasetID, userID, accessionIDs)
 	if err != nil {
 		return err
 	}
