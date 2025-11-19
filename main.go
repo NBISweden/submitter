@@ -12,7 +12,7 @@ import (
 	_ "github.com/NBISweden/submitter/internal/mail"
 )
 
-var version = "v1.0.0"
+var version = "v1.0.1"
 
 func main() {
 	slog.Info("running", "version", version)

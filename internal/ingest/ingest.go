@@ -57,7 +57,7 @@ func IngestFiles(api client.APIClient, datasetFolder string, userID string) (int
 
 	var fileList []string
 	for _, f := range files {
-		if f.Status != "uploaded"{
+		if f.Status != "uploaded" {
 			continue
 		}
 		if !strings.Contains(f.InboxPath, datasetFolder) {

@@ -67,6 +67,50 @@ type UserFiles struct {
 	InboxPath   string `json:"inboxPath"`
 }
 
+func Dataset(api *client.Client, datasetFolder string, datasetID string, userID string, fileIDsList []string) error {
+	slog.Info("starting dataset")
+	slog.Info("nr of files included in dataset", "nr_files", (len(fileIDsList)))
+	if dryRun {
+		slog.Info("dry-run enabled, no dataset will be created")
+		return nil
+	}
+
+	if len(fileIDsList) > 100 {
+		err := sendInChunks(fileIDsList, api, datasetID, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(fileIDsList) <= 100 {
+		payload := Payload{
+			AccessionIDs: fileIDsList,
+			DatasetID:    datasetID,
+			User:         userID,
+		}
+		jsonData, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+
+		response, err := api.PostDatasetCreate(jsonData)
+		if err != nil {
+			// Se comment bellow in sendInChunks() why this might be needed
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+			} else {
+				return err
+			}
+		}
+		if response.StatusCode != http.StatusOK {
+			slog.Warn("got non-ok response", "status_code", response.StatusCode)
+		}
+		defer response.Body.Close() //nolint:errcheck
+	}
+
+	slog.Info("creation of dataset completed!")
+	return nil
+}
+
 func CreateDataset(api *client.Client, datasetFolder string, datasetID string, userID string) error {
 	slog.Info("starting dataset")
 	if !dryRun {

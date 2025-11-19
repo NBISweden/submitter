@@ -38,16 +38,15 @@ func New(configPath string) (*Client, error) {
 	}
 
 	httpClient := http.DefaultClient
-	slog.Info("transport encryption", "ssl", conf.ssl)
-	if conf.ssl {
-		caCert, err := os.ReadFile(conf.caCert)
+	if conf.sslCaCert != "" {
+		caCert, err := os.ReadFile(conf.sslCaCert)
 		if err != nil {
 			return nil, fmt.Errorf("init config: %w", err)
 		}
 
 		caCertPool := x509.NewCertPool()
 		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-			return nil, fmt.Errorf("read CA cert %q: %w", conf.caCert, err)
+			return nil, fmt.Errorf("read CA cert %q: %w", conf.sslCaCert, err)
 		}
 
 		tr := &http.Transport{

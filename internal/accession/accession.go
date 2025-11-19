@@ -52,6 +52,55 @@ func init() {
 	accessionCmd.Flags().StringVar(&dataDirectory, "data-directory", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
 }
 
+func Accession(api client.APIClient, datasetFolder string, userID string) ([]string, error) {
+	var paths []string
+	var accessionIDs []string
+
+	files, err := api.GetUsersFiles()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range files {
+		if f.Status == "verified" &&
+			strings.Contains(f.InboxPath, datasetFolder) &&
+			!strings.Contains(f.InboxPath, "PRIVATE") {
+			paths = append(paths, f.InboxPath)
+		}
+	}
+	slog.Info("files found for accession id creation", "files_found", len(paths))
+
+	for _, filepath := range paths {
+		accessionID, err := generateAccessionID()
+		if err != nil {
+			return nil, err
+		}
+
+		payload, err := json.Marshal(map[string]string{
+			"accession_id": accessionID,
+			"filepath":     filepath,
+			"user":         userID,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := api.PostFileAccession(payload)
+		if err != nil {
+			if errors.Is(err, io.ErrUnexpectedEOF) {
+				continue
+			}
+			return nil, err
+		}
+		defer resp.Body.Close() //nolint:errcheck
+
+		accessionIDs = append(accessionIDs, accessionID)
+	}
+
+	slog.Info("accession IDs assigned", "nr_files", len(paths))
+	return accessionIDs, nil
+}
+
 func CreateAccessionIDs(api client.APIClient, datasetFolder string, userID string) error {
 	slog.Info("starting accession")
 	filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
