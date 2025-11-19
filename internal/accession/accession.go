@@ -36,6 +36,9 @@ var accessionCmd = &cobra.Command{
 			return err
 		}
 		api, err := client.New(configPath)
+		if err != nil {
+			return err
+		}
 		err = CreateAccessionIDs(api, conf.DatasetFolder, conf.UserID)
 		if err != nil {
 			return err

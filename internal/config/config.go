@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -18,22 +19,25 @@ type Config struct {
 
 func NewConfig(configPath string) (*Config, error) {
 	v := viper.New()
-	v.AutomaticEnv()
 
 	v.SetConfigFile(configPath)
-	if err := v.ReadInConfig(); err != nil {
-		slog.Info("no configuration file found, continuing configuration with environment variables")
-	}
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
 
 	v.SetDefault("JOB_TIMEOUT", 4320)
 	v.SetDefault("JOB_POLL_RATE", 180)
 
-	cfg := &Config{
-		DatasetFolder: v.GetString("DATASET_FOLDER"),
-		DatasetID:     v.GetString("DATASET_ID"),
-		UserID:        v.GetString("USER_ID"),
-		SslCaCert:     v.GetString("SSL_CA_CERT"),
+	if err := v.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			slog.Info("No yaml configuration supplied, continuing configuration with environment variables and defaults")
+		} else {
+			return nil, fmt.Errorf("error reading config file: %w", err)
+		}
+	} else {
+		slog.Info("Configuration file loaded successfully", slog.String("path", configPath))
 	}
+
+	cfg := &Config{}
 	if err := v.Unmarshal(cfg); err != nil {
 		return nil, fmt.Errorf("could not unmarshal config: %w", err)
 	}
