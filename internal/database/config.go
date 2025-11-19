@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 
+	"github.com/NBISweden/submitter/internal/config"
 	"github.com/spf13/viper"
 )
 
@@ -13,7 +14,7 @@ type Config struct {
 	password     string
 	databaseName string
 	schema       string
-	caCert       string
+	sslCaCert    string
 	sslMode      string
 	clientCert   string
 	clientKey    string
@@ -25,14 +26,15 @@ func NewConfig(configPath string) (*Config, error) {
 	v.SetConfigFile(configPath)
 	v.ReadInConfig()
 
+	globalConfig, _ := config.NewConfig(configPath)
 	cfg := &Config{
+		sslCaCert:    globalConfig.SslCaCert,
 		host:         v.GetString("DB_HOST"),
 		port:         v.GetInt("DB_PORT"),
 		user:         v.GetString("DB_USER"),
 		password:     v.GetString("DB_PASSWORD"),
 		databaseName: v.GetString("DB_NAME"),
 		schema:       v.GetString("DB_SCHEMA"),
-		caCert:       v.GetString("DB_CA_CERT"), // Can be shared in global config?
 		sslMode:      v.GetString("DB_SSL_MODE"),
 		clientCert:   v.GetString("DB_CLIENT_CERT"),
 		clientKey:    v.GetString("DB_CLIENT_KEY"),
@@ -49,8 +51,8 @@ func (c *Config) dataSourceName() string {
 		return connInfo
 	}
 
-	if c.caCert != "" {
-		connInfo = fmt.Sprintf("%s sslrootcert=%s", connInfo, c.caCert)
+	if c.sslCaCert != "" {
+		connInfo = fmt.Sprintf("%s sslrootcert=%s", connInfo, c.sslCaCert)
 	}
 
 	if c.clientCert != "" {

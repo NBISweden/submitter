@@ -6,12 +6,15 @@
 USER_ID: "user-1234"
 DATASET_ID: "aa-Dataset-abc"
 DATASET_FOLDER: "DATASET_ABC"
+SSL_CA_CERT: "/etc/ssl/certs/ca.crt"
+
+# job.go
+JOB_TIMEOUT = 3
+JOB_POLL_RATE = 2
 
 # client.go
 CLIENT_API_HOST: "https://api.example.com"
 CLIENT_ACCESS_TOKEN: "youraccesstoken"
-CLIENT_CA_CERT: "/etc/ssl/certs/ca.crt"
-CLIENT_SSL: true
 
 # mail.go
 MAIL_ADDRESS: "myemail@example.com"
