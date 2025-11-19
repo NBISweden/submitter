@@ -8,12 +8,12 @@ import (
 )
 
 type Config struct {
-    DatasetFolder string `mapstructure:"DATASET_FOLDER"`
-    DatasetID     string `mapstructure:"DATASET_ID"`
-    UserID        string `mapstructure:"USER_ID"`
-    SslCaCert     string `mapstructure:"SSL_CA_CERT"`
-    Timeout       int    `mapstructure:"JOB_TIMEOUT"`
-    PollRate      int    `mapstructure:"JOB_POLL_RATE"`
+	DatasetFolder string `mapstructure:"DATASET_FOLDER"`
+	DatasetID     string `mapstructure:"DATASET_ID"`
+	UserID        string `mapstructure:"USER_ID"`
+	SslCaCert     string `mapstructure:"SSL_CA_CERT"`
+	Timeout       int    `mapstructure:"JOB_TIMEOUT"`
+	PollRate      int    `mapstructure:"JOB_POLL_RATE"`
 }
 
 func NewConfig(configPath string) (*Config, error) {
