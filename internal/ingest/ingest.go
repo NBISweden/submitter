@@ -11,6 +11,8 @@ import (
 	"github.com/NBISweden/submitter/cmd"
 	"github.com/NBISweden/submitter/internal/client"
 	"github.com/NBISweden/submitter/internal/config"
+	"github.com/NBISweden/submitter/internal/database"
+	"github.com/NBISweden/submitter/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +35,11 @@ var ingestCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		_, err = IngestFiles(api, conf.DatasetFolder, conf.UserID)
+		files, err := api.GetUsersFiles()
+		if err != nil {
+			return err
+		}
+		_, err = ingestFiles(api, conf.DatasetFolder, conf.UserID, files)
 		if err != nil {
 			return err
 		}
@@ -48,13 +54,16 @@ func init() {
 	ingestCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
 }
 
-func IngestFiles(api client.APIClient, datasetFolder string, userID string) (int, error) {
-	slog.Info("starting ingest")
-	files, err := api.GetUsersFiles()
+func Run(api client.APIClient, db database.PostgresDb, datasetFolder string, userID string) (int, error) {
+	files, err := db.GetUserFiles(userID, datasetFolder, true)
 	if err != nil {
 		return 0, err
 	}
+	return ingestFiles(api, datasetFolder, userID, files)
+}
 
+func ingestFiles(api client.APIClient, datasetFolder string, userID string, files []models.FileInfo) (int, error) {
+	slog.Info("starting ingest")
 	var fileList []string
 	for _, f := range files {
 		if f.Status != "uploaded" {

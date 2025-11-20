@@ -8,6 +8,7 @@ import (
 	"github.com/NBISweden/submitter/internal/accession"
 	"github.com/NBISweden/submitter/internal/client"
 	"github.com/NBISweden/submitter/internal/config"
+	"github.com/NBISweden/submitter/internal/database"
 	"github.com/NBISweden/submitter/internal/dataset"
 	"github.com/NBISweden/submitter/internal/ingest"
 	"github.com/spf13/cobra"
@@ -51,7 +52,13 @@ func runJob() error {
 	if err != nil {
 		return err
 	}
-	filesCount, err := ingest.IngestFiles(api, datasetFolder, userID)
+
+	db, err := database.New(configPath)
+	if err != nil {
+		return err
+	}
+
+	filesCount, err := ingest.Run(api, *db, datasetFolder, userID)
 	if err != nil {
 		return err
 	}
@@ -59,7 +66,8 @@ func runJob() error {
 	if err != nil {
 		return err
 	}
-	accessionIDs, err := accession.Accession(api, datasetFolder, userID)
+
+	accessionIDs, err := accession.Run(api, *db, datasetFolder, userID)
 	if err != nil {
 		return err
 	}
@@ -69,7 +77,7 @@ func runJob() error {
 	slog.Info("waiting before sending dataset creation request", "delay", waitTime)
 	time.Sleep(waitTime)
 
-	err = dataset.Dataset(api, datasetFolder, datasetID, userID, accessionIDs)
+	err = dataset.Run(api, datasetFolder, datasetID, userID, accessionIDs)
 	if err != nil {
 		return err
 	}

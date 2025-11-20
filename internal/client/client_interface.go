@@ -3,11 +3,11 @@ package client
 import (
 	"net/http"
 
-	"github.com/NBISweden/submitter/internal/database"
+	"github.com/NBISweden/submitter/internal/models"
 )
 
 type APIClient interface {
-	GetUsersFiles() ([]*database.SubmissionFileInfo, error)
+	GetUsersFiles() ([]models.FileInfo, error)
 	PostFileIngest([]byte) (*http.Response, error)
 	PostFileAccession(payload []byte) (*http.Response, error)
 }
