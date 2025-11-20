@@ -3,18 +3,13 @@ package database
 import (
 	"database/sql"
 	"fmt"
+
+	"github.com/NBISweden/submitter/internal/models"
+	"github.com/cenkalti/backoff/v4"
 )
 
-type SubmissionFileInfo struct {
-	AccessionID string `json:"accessionID,omitempty"`
-	FileID      string `json:"fileID"`
-	InboxPath   string `json:"inboxPath"`
-	Status      string `json:"fileStatus"`
-	CreateAt    string `json:"createAt"`
-}
-
-func (dbs *PostgresDb) GetUserFiles(userID, pathPrefix string, allData bool) ([]*SubmissionFileInfo, error) {
-	files := []*SubmissionFileInfo{}
+func (dbs *PostgresDb) GetUserFiles(userID, pathPrefix string, allData bool) ([]models.FileInfo, error) {
+	files := []models.FileInfo{}
 	db := dbs.db
 
 	const query = `SELECT f.id, f.submission_file_path, f.stable_id, e.event, f.created_at FROM sda.files f
@@ -22,15 +17,19 @@ LEFT JOIN (SELECT DISTINCT ON (file_id) file_id, started_at, event FROM sda.file
 WHERE f.submission_user = $1 and f.submission_file_path LIKE $2
 AND NOT EXISTS (SELECT 1 FROM sda.file_dataset d WHERE f.id = d.file_id);`
 
-	rows, err := db.Query(query, userID, fmt.Sprintf("%s%%", pathPrefix))
+	var rows *sql.Rows
+	err := backoff.Retry(func() error {
+		var err error
+		rows, err = db.Query(query, userID, fmt.Sprintf("%s%%", pathPrefix))
+		return err
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var accessionID sql.NullString
-		fi := &SubmissionFileInfo{}
+		fi := models.FileInfo{}
 		err := rows.Scan(&fi.FileID, &fi.InboxPath, &accessionID, &fi.Status, &fi.CreateAt)
 		if err != nil {
 			return nil, err

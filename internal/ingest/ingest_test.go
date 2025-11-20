@@ -7,16 +7,16 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/NBISweden/submitter/internal/database"
+	"github.com/NBISweden/submitter/internal/models"
 )
 
 type mockClient struct {
-	FilesToReturn []*database.SubmissionFileInfo
+	FilesToReturn []models.FileInfo
 	Response      *http.Response
 	CallIndex     int
 }
 
-func (m *mockClient) GetUsersFiles() ([]*database.SubmissionFileInfo, error) {
+func (m *mockClient) GetUsersFiles() ([]models.FileInfo, error) {
 	return m.FilesToReturn, nil
 }
 
@@ -30,10 +30,9 @@ func (m *mockClient) PostFileAccession(payload []byte) (*http.Response, error) {
 
 func setup(userID string, datasetFolder string) *mockClient {
 	mock := &mockClient{
-		FilesToReturn: []*database.SubmissionFileInfo{
+		FilesToReturn: []models.FileInfo{
 			{InboxPath: fmt.Sprintf("/%s/%s/file1.c4gh", userID, datasetFolder), Status: "uploaded"},
 			{InboxPath: fmt.Sprintf("/%s/%s/file2.c4gh", userID, datasetFolder), Status: "uploaded"},
-			{InboxPath: fmt.Sprintf("/someuser/%s/file3.c4gh", datasetFolder), Status: "uploaded"},
 			{InboxPath: fmt.Sprintf("/%s/PRIVATE/%s/file4.c4gh", userID, datasetFolder), Status: "uploaded"},
 			{InboxPath: fmt.Sprintf("/%s/%s/file5.c4gh", userID, datasetFolder), Status: "error"},
 		},
@@ -49,9 +48,13 @@ func TestIngest(t *testing.T) {
 	mock := setup(userID, datasetFolder)
 
 	t.Run("Test Ingest", func(t *testing.T) {
-		files, err := IngestFiles(mock, userID, datasetFolder)
+		userFiles, err := mock.GetUsersFiles()
 		if err != nil {
-			t.Fail()
+			t.Error(err)
+		}
+		files, err := ingestFiles(mock, datasetFolder, userID, userFiles)
+		if err != nil {
+			t.Error(err)
 		}
 		if files != expectedFiles {
 			t.Logf("ingested %d/%d files", files, expectedFiles)

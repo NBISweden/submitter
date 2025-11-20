@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -12,27 +14,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NBISweden/submitter/internal/database"
+	"github.com/NBISweden/submitter/internal/models"
 	"github.com/cenkalti/backoff/v4"
 )
 
 type Client struct {
-	accessToken    string
-	apiHost        string
-	userID         string
-	datasetFolder  string
-	datasetID      string
-	httpClient     *http.Client
-	postgresClient *database.PostgresDb
+	accessToken   string
+	apiHost       string
+	userID        string
+	datasetFolder string
+	datasetID     string
+	httpClient    *http.Client
 }
 
 func New(configPath string) (*Client, error) {
 	conf, err := NewConfig(configPath)
-	if err != nil {
-		return nil, err
-	}
-
-	postgresClient, err := database.New(configPath)
 	if err != nil {
 		return nil, err
 	}
@@ -58,13 +54,12 @@ func New(configPath string) (*Client, error) {
 	}
 
 	client := &Client{
-		accessToken:    conf.accessToken,
-		apiHost:        conf.apiHost,
-		userID:         conf.userID,
-		datasetFolder:  conf.datasetFolder,
-		datasetID:      conf.datasetID,
-		httpClient:     httpClient,
-		postgresClient: postgresClient,
+		accessToken:   conf.accessToken,
+		apiHost:       conf.apiHost,
+		userID:        conf.userID,
+		datasetFolder: conf.datasetFolder,
+		datasetID:     conf.datasetID,
+		httpClient:    httpClient,
 	}
 
 	return client, nil
@@ -85,13 +80,20 @@ func (c *Client) GetUsersFilesWithPrefix() (*http.Response, error) {
 	return c.doRequest("GET", u.String(), nil)
 }
 
-func (c *Client) GetUsersFiles() ([]*database.SubmissionFileInfo, error) {
-	var files []*database.SubmissionFileInfo
-	err := backoff.Retry(func() error {
-		var err error
-		files, err = c.postgresClient.GetUserFiles(c.userID, c.datasetFolder, true)
-		return err
-	}, backoff.NewExponentialBackOff())
+func (c *Client) GetUsersFiles() ([]models.FileInfo, error) {
+	resp, err := c.doRequest("GET", fmt.Sprintf("users/%s/files", c.userID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var files []models.FileInfo
+	err = json.Unmarshal(body, &files)
 	if err != nil {
 		return nil, err
 	}
@@ -121,12 +123,10 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 			slog.Warn("client new request err", "err", err)
 			return err
 		}
-
 		req.Header.Set("Authorization", "Bearer "+c.accessToken)
 		if body != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
-
 		slog.Info("request", "method", method, "url", url)
 		resp, err = c.httpClient.Do(req)
 		if err != nil {
