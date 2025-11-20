@@ -15,6 +15,8 @@ import (
 	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/client"
 	"github.com/NBISweden/submitter/internal/config"
+	"github.com/NBISweden/submitter/internal/database"
+	"github.com/NBISweden/submitter/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -35,11 +37,41 @@ var accessionCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		datasetFolder := conf.DatasetFolder
+		userID := conf.UserID
+
 		api, err := client.New(configPath)
 		if err != nil {
 			return err
 		}
-		err = CreateAccessionIDs(api, conf.DatasetFolder, conf.UserID)
+
+		filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
+		file, err := createFileIDFile(filePath, dryRun)
+		if err != nil {
+			slog.Error("error occoured when trying to create file", "filePath", filePath)
+			return err
+		}
+		defer file.Close() //nolint:errcheck
+
+		files, err := api.GetUsersFiles()
+		if err != nil {
+			return err
+		}
+
+		paths := getPathsForAccessionIDs(files)
+		if dryRun {
+			slog.Info("dry run enabled, no accession ids will be created")
+			return nil
+		}
+		accessionIDs, err := postAccessionIDs(api, paths, userID, datasetFolder)
+
+		for _, accessionID := range accessionIDs {
+			if _, err := file.WriteString(accessionID + "\n"); err != nil {
+				return err
+			}
+		}
+
 		if err != nil {
 			return err
 		}
@@ -55,15 +87,25 @@ func init() {
 	accessionCmd.Flags().StringVar(&dataDirectory, "data-directory", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
 }
 
-func Accession(api client.APIClient, datasetFolder string, userID string) ([]string, error) {
-	var paths []string
-	var accessionIDs []string
-
-	files, err := api.GetUsersFiles()
+func Run(api client.APIClient, db database.PostgresDb, datasetFolder string, userID string) ([]string, error) {
+	slog.Info("starting accession")
+	files, err := db.GetUserFiles(userID, datasetFolder, true)
 	if err != nil {
 		return nil, err
 	}
 
+	paths := getPathsForAccessionIDs(files)
+	accessionIDs, err := postAccessionIDs(api, paths, userID, datasetFolder)
+	if err != nil {
+		return nil, err
+	}
+
+	slog.Info("accession complete")
+	return accessionIDs, nil
+}
+
+func getPathsForAccessionIDs(files []models.FileInfo) []string {
+	var paths []string
 	for _, f := range files {
 		if f.Status == "verified" &&
 			strings.Contains(f.InboxPath, datasetFolder) &&
@@ -72,11 +114,15 @@ func Accession(api client.APIClient, datasetFolder string, userID string) ([]str
 		}
 	}
 	slog.Info("files found for accession id creation", "files_found", len(paths))
+	return paths
+}
 
+func postAccessionIDs(api client.APIClient, paths []string, userID string, datasetFolder string) ([]string, error) {
+	var accessionIDs []string
 	for _, filepath := range paths {
 		accessionID, err := generateAccessionID()
 		if err != nil {
-			return nil, err
+			return accessionIDs, err
 		}
 
 		payload, err := json.Marshal(map[string]string{
@@ -85,7 +131,7 @@ func Accession(api client.APIClient, datasetFolder string, userID string) ([]str
 			"user":         userID,
 		})
 		if err != nil {
-			return nil, err
+			return accessionIDs, err
 		}
 
 		resp, err := api.PostFileAccession(payload)
@@ -93,76 +139,14 @@ func Accession(api client.APIClient, datasetFolder string, userID string) ([]str
 			if errors.Is(err, io.ErrUnexpectedEOF) {
 				continue
 			}
-			return nil, err
+			return accessionIDs, err
 		}
 		defer resp.Body.Close() //nolint:errcheck
-
 		accessionIDs = append(accessionIDs, accessionID)
 	}
 
 	slog.Info("accession IDs assigned", "nr_files", len(paths))
 	return accessionIDs, nil
-}
-
-func CreateAccessionIDs(api client.APIClient, datasetFolder string, userID string) error {
-	slog.Info("starting accession")
-	filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
-	file, err := createFileIDFile(filePath, dryRun)
-	if err != nil {
-		slog.Error("error occoured when trying to create file", "filePath", filePath)
-		return err
-	}
-	defer file.Close() //nolint:errcheck
-
-	files, err := api.GetUsersFiles()
-
-	var paths []string
-	for _, f := range files {
-		if f.Status == "verified" &&
-			strings.Contains(f.InboxPath, datasetFolder) &&
-			!strings.Contains(f.InboxPath, "PRIVATE") {
-			paths = append(paths, f.InboxPath)
-		}
-	}
-	slog.Info("files found for accession id creation", "files_found", len(paths))
-
-	if dryRun {
-		slog.Info("dry-run enabled, no files will be given accession ids")
-		return nil
-	}
-
-	for _, filepath := range paths {
-		accessionID, err := generateAccessionID()
-		if err != nil {
-			return err
-		}
-
-		payload, err := json.Marshal(map[string]string{
-			"accession_id": accessionID,
-			"filepath":     filepath,
-			"user":         userID,
-		})
-		if err != nil {
-			return err
-		}
-
-		resp, err := api.PostFileAccession(payload)
-		if err != nil {
-			if errors.Is(err, io.ErrUnexpectedEOF) {
-				continue
-			}
-			return err
-		}
-		defer resp.Body.Close() //nolint:errcheck
-
-		if _, err := file.WriteString(accessionID + "\n"); err != nil {
-			return err
-		}
-	}
-
-	slog.Info("accession IDs assigned", "nr_files", len(paths))
-
-	return nil
 }
 
 func createFileIDFile(fileIDPath string, dryrun bool) (*os.File, error) {

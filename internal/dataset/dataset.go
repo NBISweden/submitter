@@ -34,11 +34,34 @@ var datasetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		datasetFolder := conf.DatasetFolder
+		datasetID := conf.DatasetID
+		userID := conf.UserID
+
 		api, err := client.New(configPath)
 		if err != nil {
 			return err
 		}
-		err = CreateDataset(api, conf.DatasetFolder, conf.DatasetID, conf.UserID)
+
+		if !dryRun {
+			err := createStableIDsFile(api, datasetFolder)
+			if err != nil {
+				return fmt.Errorf("failed to create stable ids file: %w", err)
+			}
+		}
+
+		fileIDsList, err := getFileIDsFromFile(datasetFolder)
+		if err != nil {
+			return err
+		}
+
+		slog.Info("nr of files included in dataset", "nr_files", (len(fileIDsList)))
+		if dryRun {
+			slog.Info("dry run enabled, no dataset will be created")
+			return nil
+		}
+
+		err = createDataset(api, datasetID, userID, fileIDsList)
 		if err != nil {
 			return err
 		}
@@ -67,64 +90,21 @@ type UserFiles struct {
 	InboxPath   string `json:"inboxPath"`
 }
 
-func Dataset(api *client.Client, datasetFolder string, datasetID string, userID string, fileIDsList []string) error {
+func Run(api *client.Client, datasetFolder string, datasetID string, userID string, fileIDsList []string) error {
 	slog.Info("starting dataset")
-	slog.Info("nr of files included in dataset", "nr_files", (len(fileIDsList)))
-	if dryRun {
-		slog.Info("dry-run enabled, no dataset will be created")
-		return nil
+	err := createDataset(api, datasetID, userID, fileIDsList)
+	if err != nil {
+		return err
 	}
-
-	if len(fileIDsList) > 100 {
-		err := sendInChunks(fileIDsList, api, datasetID, userID)
-		if err != nil {
-			return err
-		}
-	}
-
-	if len(fileIDsList) <= 100 {
-		payload := Payload{
-			AccessionIDs: fileIDsList,
-			DatasetID:    datasetID,
-			User:         userID,
-		}
-		jsonData, err := json.Marshal(payload)
-		if err != nil {
-			return err
-		}
-
-		response, err := api.PostDatasetCreate(jsonData)
-		if err != nil {
-			// Se comment bellow in sendInChunks() why this might be needed
-			if errors.Is(err, io.ErrUnexpectedEOF) {
-			} else {
-				return err
-			}
-		}
-		if response.StatusCode != http.StatusOK {
-			slog.Warn("got non-ok response", "status_code", response.StatusCode)
-		}
-		defer response.Body.Close() //nolint:errcheck
-	}
-
-	slog.Info("creation of dataset completed!")
 	return nil
 }
 
-func CreateDataset(api *client.Client, datasetFolder string, datasetID string, userID string) error {
-	slog.Info("starting dataset")
-	if !dryRun {
-		err := createStableIDsFile(api, datasetFolder)
-		if err != nil {
-			slog.Error("failed to create file with stable ids")
-		}
-	}
-
+func getFileIDsFromFile(datasetFolder string) ([]string, error) {
 	var fileIDsList []string
 	filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
 	file, err := os.Open(filePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer file.Close() //nolint:errcheck
 
@@ -133,11 +113,11 @@ func CreateDataset(api *client.Client, datasetFolder string, datasetID string, u
 	for scanner.Scan() {
 		fileIDsList = append(fileIDsList, scanner.Text())
 	}
-	slog.Info("nr of files included in dataset", "nr_files", (len(fileIDsList)))
-	if dryRun {
-		slog.Info("dry-run enabled, no dataset will be created")
-		return nil
-	}
+	return fileIDsList, nil
+}
+
+func createDataset(api *client.Client, datasetID string, userID string, fileIDsList []string) error {
+	slog.Info("starting dataset")
 
 	if len(fileIDsList) > 100 {
 		err := sendInChunks(fileIDsList, api, datasetID, userID)
@@ -190,9 +170,6 @@ func sendInChunks(fileIDsList []string, api *client.Client, datasetID string, us
 			return err
 		}
 		response, err := api.PostDatasetCreate(jsonData)
-		/*
-			As of 2025-09-17 we can get EOF responses when sending the accession id request to the sda api, however the request will still have been processed on the server side, but we won't get a response back since the TCP connection will be terminated.
-		*/
 		if err != nil {
 			if errors.Is(err, io.ErrUnexpectedEOF) {
 				continue
