@@ -15,6 +15,7 @@ import (
 	"github.com/NBISweden/submitter/helpers"
 	"github.com/NBISweden/submitter/internal/client"
 	"github.com/NBISweden/submitter/internal/config"
+	"github.com/NBISweden/submitter/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -43,8 +44,23 @@ var datasetCmd = &cobra.Command{
 			return err
 		}
 
+		r, err := api.GetUsersFilesWithPrefix()
+		if err != nil {
+			return err
+		}
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			return err
+		}
+
+		var files []models.FileInfo
+		if err := json.Unmarshal(body, &files); err != nil {
+			return err
+		}
+
 		if !dryRun {
-			err := createStableIDsFile(api, datasetFolder)
+			err := createStableIDsFile(datasetFolder, files)
 			if err != nil {
 				return fmt.Errorf("failed to create stable ids file: %w", err)
 			}
@@ -139,7 +155,6 @@ func createDataset(api *client.Client, datasetID string, userID string, fileIDsL
 
 		response, err := api.PostDatasetCreate(jsonData)
 		if err != nil {
-			// Se comment bellow in sendInChunks() why this might be needed
 			if errors.Is(err, io.ErrUnexpectedEOF) {
 			} else {
 				return err
@@ -184,7 +199,7 @@ func sendInChunks(fileIDsList []string, api *client.Client, datasetID string, us
 	return nil
 }
 
-func createStableIDsFile(api *client.Client, datasetFolder string) error {
+func createStableIDsFile(datasetFolder string, files []models.FileInfo) error {
 	filePath := helpers.GetStableIDsPath(dataDirectory, datasetFolder)
 	if _, err := os.Stat(filePath); err == nil {
 		return ErrFileAlreadyExists
@@ -198,21 +213,7 @@ func createStableIDsFile(api *client.Client, datasetFolder string) error {
 	}
 	defer file.Close() //nolint:errcheck
 
-	r, err := api.GetUsersFilesWithPrefix()
-	if err != nil {
-		return err
-	}
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
-
-	var stableIDs []UserFiles
-	if err := json.Unmarshal(body, &stableIDs); err != nil {
-		return err
-	}
-
-	for _, f := range stableIDs {
+	for _, f := range files {
 		fmt.Fprintf(file, "%s %s\n", f.AccessionID, f.InboxPath) //nolint:errcheck
 	}
 
