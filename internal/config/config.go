@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -38,15 +37,17 @@ func NewConfig(configPath string) (*Config, error) {
 	v := viper.New()
 
 	v.SetConfigFile(configPath)
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
 	v.SetDefault("JOB_TIMEOUT", 4320)
 	v.SetDefault("JOB_POLL_RATE", 180)
 
-	// Reading config from file is optional, therefore no err is returned if not nil
 	if err := v.ReadInConfig(); err != nil {
-		slog.Info("could not read configuration file", "config_path", configPath, "err", err)
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			slog.Info("config file not found, using environment only")
+		} else {
+			slog.Warn("failed to read config file, falling back to environment variables", "err", err)
+		}
 	}
 
 	cfg := &Config{}
