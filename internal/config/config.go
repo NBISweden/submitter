@@ -29,7 +29,7 @@ type Config struct {
 	MailAddress       string `mapstructure:"MAIL_ADDRESS"`
 	MailPassword      string `mapstructure:"MAIL_PASSWORD"`
 	MailSmtpHost      string `mapstructure:"MAIL_SMTP_HOST"`
-	MailSmtpPort      string `mapstructure:"MAIL_SMTP_PORT"`
+	MailSmtpPort      int    `mapstructure:"MAIL_SMTP_PORT"`
 	MailUploaderName  string `mapstructure:"MAIL_UPLOADER_NAME"`
 	MailUploader      string `mapstructure:"MAIL_UPLOADER"`
 }
