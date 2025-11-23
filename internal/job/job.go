@@ -1,7 +1,9 @@
 package job
 
 import (
+	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/NBISweden/submitter/cmd"
@@ -15,13 +17,32 @@ import (
 )
 
 var configPath string
+var expectedFiles int
 
 var jobCmd = &cobra.Command{
-	Use:   "job",
+	Use:   "job <expectedFiles>",
 	Short: "Runs all dataset submission steps as a 'job'",
-	Long:  "Runs all dataset submission steps as a 'job' (ingestion, accession, dataset)",
+	Long: `Runs all dataset submission steps as a 'job' (ingestion, accession, dataset) takes a integer value representing the expected number of files to be included in the finalized dataset as argument
+	`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		var err error
+		if len(args) == 0 {
+			return fmt.Errorf("job must be supplied a number of expected files as argument")
+		}
+
+		if len(args) > 1 {
+			return fmt.Errorf("job can only handle one argument")
+		}
+
+		expectedFiles, err = strconv.Atoi(args[0])
+		if err != nil {
+			return fmt.Errorf("could not interpert expected number of files %w", err)
+		}
+		return nil
+	},
+
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := runJob()
+		err := runJob(expectedFiles)
 		if err != nil {
 			return err
 		}
@@ -34,7 +55,7 @@ func init() {
 	jobCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
 }
 
-func runJob() error {
+func runJob(expectedFiles int) error {
 	globalConf, err := config.NewConfig(configPath)
 	if err != nil {
 		return err
@@ -46,7 +67,7 @@ func runJob() error {
 	datasetID := globalConf.DatasetID
 	userID := globalConf.UserID
 
-	slog.Info("dispatching job", "dataset_folder", datasetFolder, "dataset_id", datasetID, "userID", userID)
+	slog.Info("dispatching job", "dataset_folder", datasetFolder, "dataset_id", datasetID, "userID", userID, "expected_files", expectedFiles)
 
 	api, err := client.New(configPath)
 	if err != nil {
@@ -62,6 +83,11 @@ func runJob() error {
 	if err != nil {
 		return err
 	}
+
+	if filesCount != expectedFiles {
+		return fmt.Errorf("ingest did not return the expected number of files, got %d expected %d", filesCount, expectedFiles)
+	}
+
 	_, err = api.WaitForAccession(filesCount, pollRate, timeout)
 	if err != nil {
 		return err
@@ -70,6 +96,11 @@ func runJob() error {
 	accessionIDs, err := accession.Run(api, *db, datasetFolder, userID)
 	if err != nil {
 		return err
+	}
+
+	nrAccessionIDs := len(accessionIDs)
+	if nrAccessionIDs != expectedFiles {
+		return fmt.Errorf("accession did not return the expected number of files, got %d expected %d", nrAccessionIDs, expectedFiles)
 	}
 
 	// We give some time for the SDA backend to process our accession ids. During test-runs it's been fine with 10 minutes
