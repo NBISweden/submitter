@@ -122,10 +122,10 @@ func ingestFiles(api client.APIClient, datasetFolder string, userID string, file
 		}
 
 		for code, count := range countResponds {
-			slog.Info("non-ok responds", "count", count, "code", code)
+			slog.Warn("non-ok responds", "count", count, "code", code)
 		}
 	}
 
-	slog.Info(fmt.Sprintf("starting ingestion for %d/%d successful responses", len(okResponds), filesCount))
-	return filesCount, nil
+	slog.Info(fmt.Sprintf("ingested %d/%d successful responses", len(okResponds), filesCount))
+	return len(okResponds), nil
 }
