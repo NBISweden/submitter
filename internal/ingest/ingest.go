@@ -27,11 +27,11 @@ var ingestCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig(configPath)
+		cfg, err := config.NewConfig(configPath)
 		if err != nil {
 			return err
 		}
-		api, err := client.New(configPath)
+		api, err := client.New(*cfg)
 		if err != nil {
 			return err
 		}
@@ -39,7 +39,7 @@ var ingestCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		_, err = ingestFiles(api, conf.DatasetFolder, conf.UserID, files)
+		_, err = ingestFiles(api, cfg.DatasetFolder, cfg.UserID, files)
 		if err != nil {
 			return err
 		}
