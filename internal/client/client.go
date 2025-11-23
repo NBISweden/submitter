@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NBISweden/submitter/internal/config"
 	"github.com/NBISweden/submitter/internal/models"
 	"github.com/cenkalti/backoff/v4"
 )
@@ -27,22 +28,17 @@ type Client struct {
 	httpClient    *http.Client
 }
 
-func New(configPath string) (*Client, error) {
-	conf, err := NewConfig(configPath)
-	if err != nil {
-		return nil, err
-	}
-
+func New(cfg *config.Config) (*Client, error) {
 	httpClient := http.DefaultClient
-	if conf.sslCaCert != "" {
-		caCert, err := os.ReadFile(conf.sslCaCert)
+	if cfg.SslCaCert != "" {
+		caCert, err := os.ReadFile(cfg.SslCaCert)
 		if err != nil {
 			return nil, fmt.Errorf("init config: %w", err)
 		}
 
 		caCertPool := x509.NewCertPool()
 		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-			return nil, fmt.Errorf("read CA cert %q: %w", conf.sslCaCert, err)
+			return nil, fmt.Errorf("read CA cert %q: %w", cfg.SslCaCert, err)
 		}
 
 		tr := &http.Transport{
@@ -54,11 +50,11 @@ func New(configPath string) (*Client, error) {
 	}
 
 	client := &Client{
-		accessToken:   conf.accessToken,
-		apiHost:       conf.apiHost,
-		userID:        conf.userID,
-		datasetFolder: conf.datasetFolder,
-		datasetID:     conf.datasetID,
+		accessToken:   cfg.ClientAccessToken,
+		apiHost:       cfg.ClientApiHost,
+		userID:        cfg.UserID,
+		datasetFolder: cfg.DatasetFolder,
+		datasetID:     cfg.DatasetID,
 		httpClient:    httpClient,
 	}
 

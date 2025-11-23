@@ -31,15 +31,15 @@ var datasetCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, err := config.NewConfig(configPath)
+		cfg, err := config.NewConfig(configPath)
 		if err != nil {
 			return err
 		}
-		datasetFolder := conf.DatasetFolder
-		datasetID := conf.DatasetID
-		userID := conf.UserID
+		datasetFolder := cfg.DatasetFolder
+		datasetID := cfg.DatasetID
+		userID := cfg.UserID
 
-		api, err := client.New(configPath)
+		api, err := client.New(cfg)
 		if err != nil {
 			return err
 		}

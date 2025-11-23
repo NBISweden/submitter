@@ -9,12 +9,29 @@ import (
 )
 
 type Config struct {
-	DatasetFolder string `mapstructure:"DATASET_FOLDER"`
-	DatasetID     string `mapstructure:"DATASET_ID"`
-	UserID        string `mapstructure:"USER_ID"`
-	SslCaCert     string `mapstructure:"SSL_CA_CERT"`
-	Timeout       int    `mapstructure:"JOB_TIMEOUT"`
-	PollRate      int    `mapstructure:"JOB_POLL_RATE"`
+	DatasetFolder     string `mapstructure:"DATASET_FOLDER"`
+	DatasetID         string `mapstructure:"DATASET_ID"`
+	UserID            string `mapstructure:"USER_ID"`
+	SslCaCert         string `mapstructure:"SSL_CA_CERT"`
+	Timeout           int    `mapstructure:"JOB_TIMEOUT"`
+	PollRate          int    `mapstructure:"JOB_POLL_RATE"`
+	ClientApiHost     string `mapstructure:"CLIENT_API_HOST"`
+	ClientAccessToken string `mapstructure:"CLIENT_ACCESS_TOKEN"`
+	DbHost            string `mapstructure:"DB_HOST"`
+	DbPort            int    `mapstructure:"DB_PORT"`
+	DbUser            string `mapstructure:"DB_USER"`
+	DbPassword        string `mapstructure:"DB_PASSWORD"`
+	DbName            string `mapstructure:"DB_NAME"`
+	DbSchema          string `mapstructure:"DB_SCHEMA"`
+	DbSslMode         string `mapstructure:"DB_SSL_MODE"`
+	DbClientCert      string `mapstructure:"DB_CLIENT_CERT"`
+	DbClientKey       string `mapstructure:"DB_CLIENT_KEY"`
+	MailAddress       string `mapstructure:"MAIL_ADDRESS"`
+	MailPassword      string `mapstructure:"MAIL_PASSWORD"`
+	MailSmtpHost      string `mapstructure:"MAIL_SMTP_HOST"`
+	MailSmtpPort      string `mapstructure:"MAIL_SMTP_PORT"`
+	MailUploaderName  string `mapstructure:"MAIL_UPLOADER_NAME"`
+	MailUploader      string `mapstructure:"MAIL_UPLOADER"`
 }
 
 func NewConfig(configPath string) (*Config, error) {

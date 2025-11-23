@@ -56,25 +56,25 @@ func init() {
 }
 
 func runJob(expectedFiles int) error {
-	globalConf, err := config.NewConfig(configPath)
+	cfg, err := config.NewConfig(configPath)
 	if err != nil {
 		return err
 	}
 
-	pollRate := time.Minute * time.Duration(globalConf.PollRate)
-	timeout := time.Minute * time.Duration(globalConf.Timeout)
-	datasetFolder := globalConf.DatasetFolder
-	datasetID := globalConf.DatasetID
-	userID := globalConf.UserID
+	pollRate := time.Minute * time.Duration(cfg.PollRate)
+	timeout := time.Minute * time.Duration(cfg.Timeout)
+	datasetFolder := cfg.DatasetFolder
+	datasetID := cfg.DatasetID
+	userID := cfg.UserID
 
 	slog.Info("dispatching job", "dataset_folder", datasetFolder, "dataset_id", datasetID, "userID", userID, "expected_files", expectedFiles)
 
-	api, err := client.New(configPath)
+	api, err := client.New(cfg)
 	if err != nil {
 		return err
 	}
 
-	db, err := database.New(configPath)
+	db, err := database.New(cfg)
 	if err != nil {
 		return err
 	}
