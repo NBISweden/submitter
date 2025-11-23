@@ -37,7 +37,7 @@ func NewConfig(configPath string) (*Config, error) {
 	v := viper.New()
 
 	v.SetConfigFile(configPath)
-	v.AutomaticEnv()
+	bindKeys(v)
 
 	v.SetDefault("JOB_TIMEOUT", 4320)
 	v.SetDefault("JOB_POLL_RATE", 180)
@@ -60,6 +60,32 @@ func NewConfig(configPath string) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func bindKeys(v *viper.Viper) {
+	v.BindEnv("DATASET_FOLDER")
+	v.BindEnv("DATASET_ID")
+	v.BindEnv("USER_ID")
+	v.BindEnv("SSL_CA_CERT")
+	v.BindEnv("JOB_TIMEOUT")
+	v.BindEnv("JOB_POLL_RATE")
+	v.BindEnv("CLIENT_API_HOST")
+	v.BindEnv("CLIENT_ACCESS_TOKEN")
+	v.BindEnv("DB_HOST")
+	v.BindEnv("DB_PORT")
+	v.BindEnv("DB_USER")
+	v.BindEnv("DB_PASSWORD")
+	v.BindEnv("DB_NAME")
+	v.BindEnv("DB_SCHEMA")
+	v.BindEnv("DB_SSL_MODE")
+	v.BindEnv("DB_CLIENT_CERT")
+	v.BindEnv("DB_CLIENT_KEY")
+	v.BindEnv("MAIL_ADDRESS")
+	v.BindEnv("MAIL_PASSWORD")
+	v.BindEnv("MAIL_SMTP_HOST")
+	v.BindEnv("MAIL_SMTP_PORT")
+	v.BindEnv("MAIL_UPLOADER_NAME")
+	v.BindEnv("MAIL_UPLOADER")
 }
 
 func validateConfig(cfg *Config) error {
