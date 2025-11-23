@@ -44,14 +44,9 @@ func NewConfig(configPath string) (*Config, error) {
 	v.SetDefault("JOB_TIMEOUT", 4320)
 	v.SetDefault("JOB_POLL_RATE", 180)
 
+	// Reading config from file is optional, therefore no err is returned if not nil
 	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			slog.Info("No yaml configuration supplied, continuing configuration with environment variables and defaults")
-		} else {
-			return nil, fmt.Errorf("error reading config file: %w", err)
-		}
-	} else {
-		slog.Info("Configuration file loaded successfully", slog.String("path", configPath))
+		slog.Info("could not read configuration file", "config_path", configPath, "err", err)
 	}
 
 	cfg := &Config{}
