@@ -107,7 +107,6 @@ type UserFiles struct {
 }
 
 func Run(api *client.Client, datasetFolder string, datasetID string, userID string, fileIDsList []string) error {
-	slog.Info("starting dataset")
 	err := createDataset(api, datasetID, userID, fileIDsList)
 	if err != nil {
 		return err
