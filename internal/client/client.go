@@ -16,7 +16,6 @@ import (
 
 	"github.com/NBISweden/submitter/internal/config"
 	"github.com/NBISweden/submitter/internal/models"
-	"github.com/cenkalti/backoff/v4"
 )
 
 type Client struct {
@@ -109,31 +108,24 @@ func (c *Client) PostDatasetCreate(payload []byte) (*http.Response, error) {
 }
 
 func (c *Client) doRequest(method, path string, body []byte) (*http.Response, error) {
-	var req *http.Request
-	var resp *http.Response
-	err := backoff.Retry(func() error {
-		var err error
-		url := fmt.Sprintf("%s/%s", c.apiHost, path)
-		req, err = http.NewRequest(method, url, bytes.NewReader(body))
-		if err != nil {
-			slog.Warn("client new request err", "err", err)
-			return err
-		}
-		req.Header.Set("Authorization", "Bearer "+c.accessToken)
-		if body != nil {
-			req.Header.Set("Content-Type", "application/json")
-		}
-		slog.Info("request", "method", method, "url", url)
-		resp, err = c.httpClient.Do(req)
-		if err != nil {
-			slog.Warn("client do err", "err", err)
-			return err
-		}
-		return nil
-	}, backoff.NewExponentialBackOff())
-
+	url := fmt.Sprintf("%s/%s", c.apiHost, path)
+	req, err := http.NewRequest(method, url, bytes.NewReader(body))
+	if err != nil {
+		slog.Warn("client new request err", "err", err)
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.accessToken)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	slog.Info("request", "method", method, "url", url)
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		slog.Warn("client do err", "err", err)
+		return nil, err 
+	}
 	slog.Info("response", "status", resp.Status)
-	return resp, err
+	return resp, nil
 }
 
 func (c *Client) WaitForAccession(target int, interval time.Duration, timeout time.Duration) ([]string, error) {
