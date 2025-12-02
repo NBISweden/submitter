@@ -54,8 +54,11 @@ func init() {
 	ingestCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
 }
 
-func Run(api client.APIClient, db database.PostgresDb, datasetFolder string, userID string) (int, error) {
+func Run(api client.APIClient, db database.PostgresDb, datasetFolder string, userID string, expectedFiles int) (int, error) {
 	files, err := db.GetUserFiles(userID, datasetFolder, true)
+	if expectedFiles != len(files) {
+		return 0, fmt.Errorf("expected nr of files does not match files from db, got %d expected %d", len(files), expectedFiles)
+	}
 	if err != nil {
 		return 0, err
 	}
