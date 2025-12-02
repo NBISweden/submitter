@@ -56,7 +56,8 @@ func init() {
 
 func Run(api client.APIClient, db database.PostgresDb, datasetFolder string, userID string, expectedFiles int) (int, error) {
 	files, err := db.GetUserFiles(userID, datasetFolder, true)
-	if expectedFiles != len(files) {
+	filteredFiles := filterFiles(files, datasetFolder)
+	if expectedFiles != len(filteredFiles) {
 		return 0, fmt.Errorf("expected nr of files does not match files from db, got %d expected %d", len(files), expectedFiles)
 	}
 	if err != nil {
@@ -65,9 +66,8 @@ func Run(api client.APIClient, db database.PostgresDb, datasetFolder string, use
 	return ingestFiles(api, datasetFolder, userID, files)
 }
 
-func ingestFiles(api client.APIClient, datasetFolder string, userID string, files []models.FileInfo) (int, error) {
-	slog.Info("starting ingest")
-	var fileList []string
+func filterFiles(files []models.FileInfo, datasetFolder string) []string {
+	var filteredFiles []string
 	for _, f := range files {
 		if f.Status != "uploaded" {
 			continue
@@ -78,8 +78,14 @@ func ingestFiles(api client.APIClient, datasetFolder string, userID string, file
 		if strings.Contains(f.InboxPath, "PRIVATE") || strings.Contains(f.InboxPath, "LANDING PAGE") {
 			continue
 		}
-		fileList = append(fileList, f.InboxPath)
+		filteredFiles = append(filteredFiles, f.InboxPath)
 	}
+	return filteredFiles
+}
+
+func ingestFiles(api client.APIClient, datasetFolder string, userID string, files []models.FileInfo) (int, error) {
+	slog.Info("starting ingest")
+	fileList := filterFiles(files, datasetFolder)
 
 	filesCount := len(fileList)
 	slog.Info("number of files to ingest", "filesCount", filesCount)
