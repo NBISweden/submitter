@@ -79,7 +79,7 @@ func runJob(expectedFiles int) error {
 		return err
 	}
 
-	filesCount, err := ingest.Run(api, *db, datasetFolder, userID)
+	filesCount, err := ingest.Run(api, *db, datasetFolder, userID, expectedFiles)
 	if err != nil {
 		return err
 	}
