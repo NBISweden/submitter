@@ -18,6 +18,7 @@ import (
 var templateFS embed.FS
 var dryRun bool
 var configPath string
+var dataDirectory string
 
 var mailCmd = &cobra.Command{
 	Use:   "mail",
@@ -43,6 +44,7 @@ func init() {
 	cmd.AddCommand(mailCmd)
 	mailCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will send all emails to the address in configuration.Email (env or yaml conf)")
 	mailCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
+	mailCmd.Flags().StringVar(&dataDirectory, "data-directory", "data", "Directory to retrieve files from to attach in mail notifications")
 }
 
 type Mail struct {
@@ -56,9 +58,9 @@ type Mail struct {
 }
 
 type TemplateData struct {
-	uploader      string
-	datasetID     string
-	datasetFolder string
+	Uploader      string
+	DatasetID     string
+	DatasetFolder string
 }
 
 type Notifiers struct {
@@ -77,29 +79,29 @@ func New(c *config.Config) *Mail {
 		password: c.MailPassword,
 		from:     c.MailAddress,
 		data: TemplateData{
-			uploader:      c.MailUploaderName,
-			datasetID:     c.DatasetID,
-			datasetFolder: c.DatasetFolder,
+			Uploader:      c.MailUploaderName,
+			DatasetID:     c.DatasetID,
+			DatasetFolder: c.DatasetFolder,
 		},
 		lookup: map[string]Notifiers{
 			"Submitter": {
 				email:       c.MailUploader,
 				template:    "notify-submitter.html",
 				subject:     "Successful Ingestion of Your Dataset Submission",
-				attachments: []string{fmt.Sprintf("/data/%s-stableIDs.txt", c.DatasetFolder)},
+				attachments: []string{fmt.Sprintf("%s/%s-stableIDs.txt", dataDirectory, c.DatasetFolder)},
 			},
 			"BigPicture": {
 				email:       "submit@bigpicture.eu",
 				template:    "notify-bigpicture.html",
 				subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
-				attachments: []string{"/data/dataset.txt", "data/policy.txt"},
+				attachments: []string{fmt.Sprintf("%s/dataset.txt", dataDirectory), fmt.Sprintf("%s/policy.txt", dataDirectory)},
 			},
 			"Minttu": {
 				email:       "minttu.sauramo@hus.fi",
 				cc:          []string{"jarno.laitinen@csc.fi"},
 				template:    "notify-minttu.html",
 				subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetFolder),
-				attachments: []string{"/data/dataset.txt", "data/rems.txt", "data/policy.txt"},
+				attachments: []string{fmt.Sprintf("%s/dataset.txt", dataDirectory), fmt.Sprintf("%s/rems.txt", dataDirectory), fmt.Sprintf("%s/policy.txt", dataDirectory)},
 			},
 		},
 	}
