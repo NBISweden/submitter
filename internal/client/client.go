@@ -122,7 +122,7 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		slog.Warn("client do err", "err", err)
-		return nil, err 
+		return nil, err
 	}
 	slog.Info("response", "status", resp.Status)
 	return resp, nil
