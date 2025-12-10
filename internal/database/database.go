@@ -12,6 +12,10 @@ type PostgresDb struct {
 	db *sql.DB
 }
 
+func (dbs *PostgresDb) Close() {
+	dbs.db.Close()
+}
+
 func New(cfg *config.Config) (*PostgresDb, error) {
 	var err error
 	pg := &PostgresDb{db: nil}

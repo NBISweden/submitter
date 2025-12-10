@@ -78,6 +78,7 @@ func runJob(expectedFiles int) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	filesCount, err := ingest.Run(api, *db, datasetFolder, userID, expectedFiles)
 	if err != nil {
