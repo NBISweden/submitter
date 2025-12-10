@@ -70,13 +70,9 @@ spec:
             - name: DB_CLIENT_KEY
               value: ""
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
+            fsGroup: 65534
+            runAsGroup: 65534
             runAsUser: 65534
-            capabilities:
-              drop: ["ALL"]
-            seccompProfile:
-              type: RuntimeDefault
           volumeMounts:
             - name: data-volume
               mountPath: /data
