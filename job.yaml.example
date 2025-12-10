@@ -1,6 +1,3 @@
-# ===============================
-# Kubernetes Job Manifest Example. Use this to populate your own config
-# ===============================
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -25,10 +22,6 @@ spec:
           imagePullPolicy: Always
           args: ["job"]
           env:
-            - name: JOB_TIMEOUT
-              value: "4320" # 4320 minutes = 72 hours
-            - name: JOB_POLL_RATE
-              value: "180" # 180 minutes = 3 hours
             - name: USER_ID
               value: johndoe@lifescience-ri.eu
             - name: DATASET_ID
@@ -77,6 +70,7 @@ spec:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
             runAsUser: 65534
+            runAsGroup: 65534
             capabilities:
               drop: ["ALL"]
             seccompProfile:
