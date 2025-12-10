@@ -56,12 +56,13 @@ func init() {
 
 func Run(api client.APIClient, db database.PostgresDb, datasetFolder string, userID string, expectedFiles int) (int, error) {
 	files, err := db.GetUserFiles(userID, datasetFolder, true)
+	if err != nil {
+		return 0, err
+	}
+
 	filteredFiles := filterFiles(files, datasetFolder)
 	if expectedFiles != len(filteredFiles) {
 		return 0, fmt.Errorf("expected nr of files does not match files from db, got %d expected %d", len(files), expectedFiles)
-	}
-	if err != nil {
-		return 0, err
 	}
 	return ingestFiles(api, datasetFolder, userID, files)
 }

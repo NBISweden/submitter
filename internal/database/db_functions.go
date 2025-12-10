@@ -11,7 +11,6 @@ import (
 func (dbs *PostgresDb) GetUserFiles(userID, pathPrefix string, allData bool) ([]models.FileInfo, error) {
 	files := []models.FileInfo{}
 	db := dbs.db
-	defer db.Close()
 
 	const query = `SELECT f.id, f.submission_file_path, f.stable_id, e.event, f.created_at FROM sda.files f
 LEFT JOIN (SELECT DISTINCT ON (file_id) file_id, started_at, event FROM sda.file_event_log ORDER BY file_id, started_at DESC) e ON f.id = e.file_id
