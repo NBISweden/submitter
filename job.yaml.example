@@ -1,7 +1,10 @@
+# ===============================
+# Job Configuration Example. Use this as a starting point to populate your own config
+# ===============================
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: aa-Dataset-abc
+  name: aa-dataset-abc
   labels:
     release: pipeline
 spec:
@@ -85,4 +88,5 @@ spec:
           emptyDir: {}
         - name: tls
           secret:
+            defaultMode: 288
             secretName: svc-api-certs
