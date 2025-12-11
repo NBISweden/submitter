@@ -23,7 +23,7 @@ spec:
         - name: submitter
           image: harbor.nbis.se/sda/submitter:latest
           imagePullPolicy: Always
-          args: ["job"]
+          args: ["job", "0"] # The second arg represents the expected number of files to be in the final dataset
           env:
             - name: USER_ID
               value: johndoe@lifescience-ri.eu
@@ -38,7 +38,7 @@ spec:
             - name: CLIENT_ACCESS_TOKEN 
               value:
             - name: MAIL_UPLOADER_NAME
-              value: John Doe
+              value: "John Doe"
             - name: MAIL_UPLOADER
               value: uploader@email.com
             - name: MAIL_ADDRESS
@@ -50,25 +50,46 @@ spec:
             - name: MAIL_SMTP_PORT
               value: "587"
             - name: DB_HOST
-              value: "localhost"
+              valueFrom:
+                secretKeyRef:
+                  name: sda-sda-svc-submitter
+                  key: DB_HOST
             - name: DB_PORT
-              value: "15432"
+              valueFrom:
+                secretKeyRef:
+                  name: sda-sda-svc-submitter
+                  key: DB_PORT
             - name: DB_USER
-              value: "api"
+              valueFrom:
+                secretKeyRef:
+                  name: sda-sda-svc-submitter
+                  key: DB_USER
             - name: DB_PASSWORD
-              value: "api"
+              valueFrom:
+                secretKeyRef:
+                  name: sda-sda-svc-submitter
+                  key: DB_PASSWORD
             - name: DB_NAME
-              value: "postgres"
+              valueFrom:
+                secretKeyRef:
+                  name: sda-sda-svc-submitter
+                  key: DB_NAME
             - name: DB_SCHEMA
-              value: "sda"
+              valueFrom:
+                secretKeyRef:
+                  name: sda-sda-svc-submitter
+                  key: DB_SCHEMA
             - name: DB_SSL_MODE
-              value: "disable"
+              valueFrom:
+                secretKeyRef:
+                  name: sda-sda-svc-submitter
+                  key: DB_SSL_MODE
             - name: DB_CA_CERT
-              value: ""
+              value: "/.secrets/tls/ca.crt"
             - name: DB_CLIENT_CERT
-              value: ""
+              value: /.secrets/tls/tls.crt
             - name: DB_CLIENT_KEY
-              value: ""
+              value: /.secrets/tls/tls.key
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
