@@ -128,6 +128,11 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 			slog.Warn("client do err", "err", err)
 			return err
 		}
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("non-ok response from api: %s", resp.Status)
+		}
+
 		return nil
 	}, backoff.NewExponentialBackOff())
 
