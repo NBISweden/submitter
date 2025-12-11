@@ -4,21 +4,14 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: aa-dataset-abc
-  labels:
-    release: pipeline
+  name: # Name of the dataset being submitted "aa-dataset-abcdef-123456"
 spec:
   backoffLimit: 0
   template:
     metadata:
       labels:
-        release: pipeline
+        # Key value pairs of labels. This is required if networkpolicies are in use.
     spec:
-      securityContext:
-        fsGroup: 65534
-        runAsGroup: 65534
-        runAsUser: 65534
-      restartPolicy: Never
       containers:
         - name: submitter
           image: harbor.nbis.se/sda/submitter:latest
@@ -54,26 +47,30 @@ spec:
             - name: DB_PORT
               value: "15432"
             - name: DB_USER
-              value: "api"
+              valueFrom:
+                secretRef:
+                  name: # Name of the secret that contains the data
+                  key: # Key in the secret thhat has the value of the DB user (usually "username")
             - name: DB_PASSWORD
-              value: "api"
+              valueFrom:
+                secretRef:
+                  name: # Name of the secret that contains the data
+                  key: # Key in the secret thhat has the value of the password for the DB user (usually "password")
             - name: DB_NAME
-              value: "postgres"
+              value: # Name of the database to connect to
             - name: DB_SCHEMA
-              value: "sda"
+              value: # name of the DB schema to use as search base
             - name: DB_SSL_MODE
-              value: "disable"
+              value:  # Available options is, disable, verify-ca, verify-full
             - name: DB_CA_CERT
-              value: ""
+              value: "/.secrets/tls/ca.crt"
             - name: DB_CLIENT_CERT
-              value: ""
+              value: "/.secrets/tls/tls.crt"
             - name: DB_CLIENT_KEY
-              value: ""
+              value: "/.secrets/tls/tlks.key"
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
-            runAsUser: 65534
-            runAsGroup: 65534
             capabilities:
               drop: ["ALL"]
             seccompProfile:
@@ -81,12 +78,17 @@ spec:
           volumeMounts:
             - name: data-volume
               mountPath: /data
-            - mountPath: /.secrets/tls/
-              name: tls
+            - name: tls
+              mountPath: /.secrets/tls/
+      restartPolicy: Never
+      securityContext:
+        fsGroup: 65534
+        runAsGroup: 65534
+        runAsUser: 65534
       volumes:
         - name: data-volume
           emptyDir: {}
         - name: tls
           secret:
-            defaultMode: 288
-            secretName: svc-api-certs
+            defaultMode: 288 # This is the decimal notation of filemode 0440. The 4 digit filemode is also a valid enrty.
+            secretName: # Name of the secret that holds the certificates
