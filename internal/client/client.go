@@ -16,6 +16,7 @@ import (
 
 	"github.com/NBISweden/submitter/internal/config"
 	"github.com/NBISweden/submitter/internal/models"
+	"github.com/cenkalti/backoff/v4"
 )
 
 type Client struct {
@@ -119,11 +120,22 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 		req.Header.Set("Content-Type", "application/json")
 	}
 	slog.Info("request", "method", method, "url", url)
-	resp, err := c.httpClient.Do(req)
+
+	var resp *http.Response
+	err = backoff.Retry(func() error {
+		resp, err = c.httpClient.Do(req)
+		if err != nil {
+			slog.Warn("client do err", "err", err)
+			return err
+		}
+		return nil
+	}, backoff.NewExponentialBackOff())
+
 	if err != nil {
-		slog.Warn("client do err", "err", err)
+		slog.Error("could not complete request", "err", err)
 		return nil, err
 	}
+
 	slog.Info("response", "status", resp.Status)
 	return resp, nil
 }
