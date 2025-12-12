@@ -110,19 +110,20 @@ func (c *Client) PostDatasetCreate(payload []byte) (*http.Response, error) {
 
 func (c *Client) doRequest(method, path string, body []byte) (*http.Response, error) {
 	url := fmt.Sprintf("%s/%s", c.apiHost, path)
-	req, err := http.NewRequest(method, url, bytes.NewReader(body))
-	if err != nil {
-		slog.Warn("client new request err", "err", err)
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+c.accessToken)
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-	slog.Info("request", "method", method, "url", url)
-
 	var resp *http.Response
-	err = backoff.Retry(func() error {
+	err := backoff.Retry(func() error {
+		req, err := http.NewRequest(method, url, bytes.NewReader(body))
+		if err != nil {
+			slog.Warn("client new request err", "err", err)
+			return err
+		}
+
+		req.Header.Set("Authorization", "Bearer "+c.accessToken)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		slog.Info("request", "method", method, "url", url)
+
 		resp, err = c.httpClient.Do(req)
 		if err != nil {
 			slog.Warn("client do err", "err", err)
@@ -130,10 +131,13 @@ func (c *Client) doRequest(method, path string, body []byte) (*http.Response, er
 		}
 
 		if resp.StatusCode == http.StatusInternalServerError {
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
 			return fmt.Errorf("non-ok response from api: %s", resp.Status)
 		}
 
 		return nil
+
 	}, backoff.NewExponentialBackOff())
 
 	if err != nil {

@@ -191,11 +191,15 @@ func sendInChunks(fileIDsList []string, api *client.Client, datasetID string, us
 			}
 			return err
 		}
-		if response.StatusCode != http.StatusOK {
-			nonOkResponds = append(nonOkResponds, *response)
-			slog.Warn("got non-ok response", "status_code", response.StatusCode)
-		}
-		defer response.Body.Close() //nolint:errcheck
+
+		func() {
+			defer response.Body.Close()
+			if response.StatusCode != http.StatusOK {
+				nonOkResponds = append(nonOkResponds, *response)
+				slog.Warn("got non-ok response", "status_code", response.StatusCode)
+			}
+			io.Copy(io.Discard, response.Body)
+		}()
 	}
 	if len(nonOkResponds) != 0 {
 		slog.Warn("found non-ok responds from SDA API", "non-oks", len(nonOkResponds))
