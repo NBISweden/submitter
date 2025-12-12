@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"net/http"
 	"os"
 	"slices"
 
@@ -44,18 +43,13 @@ var datasetCmd = &cobra.Command{
 			return err
 		}
 
-		r, err := api.GetUsersFilesWithPrefix()
-		if err != nil {
-			return err
-		}
-
-		body, err := io.ReadAll(r.Body)
+		resp, err := api.GetUsersFilesWithPrefix()
 		if err != nil {
 			return err
 		}
 
 		var files []models.FileInfo
-		if err := json.Unmarshal(body, &files); err != nil {
+		if err := json.Unmarshal(resp, &files); err != nil {
 			return err
 		}
 
@@ -152,17 +146,13 @@ func createDataset(api *client.Client, datasetID string, userID string, fileIDsL
 			return err
 		}
 
-		response, err := api.PostDatasetCreate(jsonData)
+		_, err = api.PostDatasetCreate(jsonData)
 		if err != nil {
 			if errors.Is(err, io.ErrUnexpectedEOF) {
 			} else {
 				return err
 			}
 		}
-		if response.StatusCode != http.StatusOK {
-			slog.Warn("got non-ok response", "status_code", response.StatusCode)
-		}
-		defer response.Body.Close() //nolint:errcheck
 	}
 
 	slog.Info("creation of dataset completed!")
@@ -173,37 +163,27 @@ func sendInChunks(fileIDsList []string, api *client.Client, datasetID string, us
 	slog.Info("more than 100 entries, sending in chunks of 100")
 	chunks := slices.Chunk(fileIDsList, 100)
 	allChunks := slices.Collect(chunks)
-	var nonOkResponds []http.Response
 	for _, chunk := range allChunks {
 		payload := Payload{
 			AccessionIDs: chunk,
 			DatasetID:    datasetID,
 			User:         userID,
 		}
+
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
 			return err
 		}
-		response, err := api.PostDatasetCreate(jsonData)
+
+		_, err = api.PostDatasetCreate(jsonData)
 		if err != nil {
 			if errors.Is(err, io.ErrUnexpectedEOF) {
 				continue
 			}
 			return err
 		}
+	}
 
-		func() {
-			defer response.Body.Close()
-			if response.StatusCode != http.StatusOK {
-				nonOkResponds = append(nonOkResponds, *response)
-				slog.Warn("got non-ok response", "status_code", response.StatusCode)
-			}
-			io.Copy(io.Discard, response.Body)
-		}()
-	}
-	if len(nonOkResponds) != 0 {
-		slog.Warn("found non-ok responds from SDA API", "non-oks", len(nonOkResponds))
-	}
 	return nil
 }
 
