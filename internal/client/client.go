@@ -130,7 +130,6 @@ func (c *Client) doRequest(method, path string, body []byte) ([]byte, error) {
 		}
 
 		if resp.StatusCode == http.StatusInternalServerError {
-			io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
 			return fmt.Errorf("non-ok response from api: %s", resp.Status)
 		}
@@ -145,7 +144,6 @@ func (c *Client) doRequest(method, path string, body []byte) ([]byte, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 		return nil, fmt.Errorf("non-ok response: %s", resp.Status)
 	}
