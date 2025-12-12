@@ -134,15 +134,13 @@ func postAccessionIDs(api client.APIClient, paths []string, userID string, datas
 			return accessionIDs, err
 		}
 
-		resp, err := api.PostFileAccession(payload)
+		_, err = api.PostFileAccession(payload)
 		if err != nil {
 			if errors.Is(err, io.ErrUnexpectedEOF) {
 				continue
 			}
 			return accessionIDs, err
 		}
-		defer resp.Body.Close() //nolint:errcheck
-		accessionIDs = append(accessionIDs, accessionID)
 	}
 
 	slog.Info("accession IDs assigned", "nr_files", len(paths))
