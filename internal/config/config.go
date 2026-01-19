@@ -28,6 +28,7 @@ type Config struct {
 	DbSslMode                    string `mapstructure:"DB_SSL_MODE"`
 	DbClientCert                 string `mapstructure:"DB_CLIENT_CERT"`
 	DbClientKey                  string `mapstructure:"DB_CLIENT_KEY"`
+	MailXmlSecretName            string `mapstructure:"MAIL_XML_SECRET_NAME"`
 	MailAddress                  string `mapstructure:"MAIL_ADDRESS"`
 	MailPassword                 string `mapstructure:"MAIL_PASSWORD"`
 	MailSmtpHost                 string `mapstructure:"MAIL_SMTP_HOST"`
@@ -86,6 +87,7 @@ func bindKeys(v *viper.Viper) {
 	v.BindEnv("DB_SSL_MODE")
 	v.BindEnv("DB_CLIENT_CERT")
 	v.BindEnv("DB_CLIENT_KEY")
+	v.BindEnv("MAIL_XML_SECRET_NAME")
 	v.BindEnv("MAIL_ADDRESS")
 	v.BindEnv("MAIL_PASSWORD")
 	v.BindEnv("MAIL_SMTP_HOST")

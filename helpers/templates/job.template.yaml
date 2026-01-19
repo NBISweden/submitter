@@ -101,11 +101,17 @@ spec:
           volumeMounts:
             - name: data-volume
               mountPath: /data
-            - mountPath: /.secrets/tls/
-              name: tls
+            - name: xml-data
+              mountPath: /data/xml-data/
+            - name: tls
+              mountPath: /.secrets/tls/
       volumes:
         - name: data-volume
           emptyDir: {}
+        - name: xml-data
+          secret:
+            defaultMode: 288
+            secretName: {{ .MailXmlSecretName }}
         - name: tls
           secret:
             defaultMode: 288

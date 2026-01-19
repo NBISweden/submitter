@@ -11,7 +11,7 @@ import (
 	"github.com/NBISweden/sda-bpctl/cmd"
 	"github.com/NBISweden/sda-bpctl/internal/config"
 	"github.com/spf13/cobra"
-	"gopkg.in/gomail.v2"
+	gomail "github.com/wneessen/go-mail"
 )
 
 //go:embed templates/*.html
@@ -110,35 +110,6 @@ func New(c *config.Config) *Mail {
 	return m
 }
 
-func (mail *Mail) send(subject string, message string, reciever string, attachements []string, ccs []string) error {
-	m := gomail.NewMessage()
-	m.SetHeader("From", mail.from)
-	m.SetHeader("To", reciever)
-	m.SetHeader("Subject", subject)
-
-	if len(ccs) > 0 {
-		addresses := make([]string, 0, len(ccs))
-		for _, email := range ccs {
-			addresses = append(addresses, m.FormatAddress(email, ""))
-		}
-		m.SetHeader("Cc", addresses...)
-	}
-
-	m.SetBody("text/html", message)
-
-	// Enforce that the wanted attachements are files that exists
-	if err := attachementsExists(attachements); err != nil {
-		return err
-	}
-	for _, file := range attachements {
-		m.Attach(file)
-	}
-
-	d := gomail.NewDialer(mail.smtpHost, mail.smtpPort, mail.email, mail.password)
-	slog.Info("[mail] notification sent about dataset completion", "reciever", reciever)
-	return d.DialAndSend(m)
-}
-
 func (mail *Mail) Notify(notifier string, dryRun bool) error {
 	htmlBody, err := renderTemplate(mail.lookup[notifier].template, mail.data)
 	if err != nil {
@@ -171,6 +142,44 @@ func renderTemplate(filename string, data TemplateData) (string, error) {
 	}
 
 	return buf.String(), nil
+}
+
+func (mail *Mail) send(subject string, message string, reciever string, attachements []string, ccs []string) error {
+	m := gomail.NewMsg()
+
+	if err := m.From(mail.from); err != nil {
+		return err
+	}
+
+	if err := m.To(reciever); err != nil {
+		return err
+	}
+
+	m.Subject(subject)
+
+	if len(ccs) > 0 {
+		if err := m.Cc(ccs...); err != nil {
+			return err
+		}
+	}
+
+	m.SetBodyString("text/html", message)
+
+	// Enforce that the wanted attachements are files that exists
+	if err := attachementsExists(attachements); err != nil {
+		return err
+	}
+
+	for _, file := range attachements {
+		m.AttachFile(file)
+	}
+
+	client, err := gomail.NewClient(mail.smtpHost, gomail.WithPort(mail.smtpPort), gomail.WithSMTPAuth(gomail.SMTPAuthPlain), gomail.WithUsername(mail.email), gomail.WithPassword(mail.password))
+	if err != nil {
+		return err
+	}
+	slog.Info("[mail] notification sent about dataset completion", "reciever", reciever)
+	return client.DialAndSend(m)
 }
 
 func attachementsExists(attachements []string) error {
