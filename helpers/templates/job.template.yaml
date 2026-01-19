@@ -32,8 +32,8 @@ spec:
               value: "{{ .SslCaCert }}"
             - name: CLIENT_API_HOST
               value: {{ .ClientApiHost }}
-            - name: CLIENT_ACCESS_TOKEN 
-              value: {{ .ClientAccesToken }}
+            - name: CLIENT_ACCESS_TOKEN
+              value: {{ .ClientAccessToken }}
             - name: MAIL_UPLOADER_NAME
               value: "{{ .MailUploaderName }}"
             - name: MAIL_UPLOADER_ORGANIZATION_NAME
