@@ -29,7 +29,7 @@ type TemplateData struct {
 	DatasetFolder                string
 	SslCaCert                    string
 	ClientApiHost                string
-	ClientAccesToken             string
+	ClientAccessToken            string
 	MailUploaderName             string
 	MailUploaderOrganizationName string
 	MailUploader                 string
@@ -92,7 +92,7 @@ func createTemplateData(cfg *config.Config) (TemplateData, error) {
 		DatasetFolder:                cfg.DatasetFolder,
 		SslCaCert:                    "/.secrets/tls/ca.crt",
 		ClientApiHost:                cfg.ClientApiHost,
-		ClientAccesToken:             cfg.ClientAccessToken,
+		ClientAccessToken:            cfg.ClientAccessToken,
 		MailUploaderName:             cfg.MailUploaderName,
 		MailUploaderOrganizationName: cfg.MailUploaderOrganizationName,
 		MailUploader:                 cfg.MailUploader,
