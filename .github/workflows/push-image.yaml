@@ -44,5 +44,5 @@ jobs:
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
           tags: |
-            harbor.nbis.se/myproject/bpctl:${{ steps.version.outputs.version }}
-            harbor.nbis.se/myproject/bpctl:latest
+            harbor.nbis.se/sda/bpctl:${{ steps.version.outputs.version }}
+            harbor.nbis.se/sda/bpctl:latest
