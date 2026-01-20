@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: email-egress
+  namespace: sda-prod
+spec:
+  egress:
+  - ports:
+    - port: 587
+      protocol: TCP
+    to:
+    - ipBlock:
+        cidr: 130.238.55.33/32
+  podSelector:
+    matchLabels:
+      bigpicture: bpctl
+  policyTypes:
+  - Egress

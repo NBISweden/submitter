@@ -3,12 +3,14 @@ kind: Job
 metadata:
   name: {{ .JobName }}
   labels: 
+    bigpicture: bpctl
     release: {{ .JobReleaseLabel }}
 spec:
   backoffLimit: 0
   template:
     metadata:
       labels:
+        bigpicture: bpctl
         release: {{ .JobReleaseLabel }}
     spec:
       securityContext:
@@ -102,7 +104,7 @@ spec:
             - name: data-volume
               mountPath: /data
             - name: xml-data-{{ .JobName }}
-              mountPath: /data/xml-data/
+              mountPath: /data/xml
             - name: tls
               mountPath: /.secrets/tls/
       volumes:
