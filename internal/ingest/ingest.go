@@ -32,7 +32,7 @@ var ingestCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		files, err := api.GetUsersFiles()
+		files, err := api.GetUsersFilesWithPrefix()
 		if err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func init() {
 }
 
 func Run(api client.APIClient, datasetFolder string, userID string, expectedFiles int) (int, error) {
-	files, err := api.GetUsersFiles()
+	files, err := api.GetUsersFilesWithPrefix()
 	if err != nil {
 		return 0, err
 	}

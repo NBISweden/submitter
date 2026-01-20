@@ -61,7 +61,7 @@ func New(cfg *config.Config) (*Client, error) {
 	return client, nil
 }
 
-func (c *Client) GetUsersFilesWithPrefix() ([]byte, error) {
+func (c *Client) GetUsersFilesWithPrefix() ([]models.FileInfo, error) {
 	basePath := fmt.Sprintf("users/%s/files", c.userID)
 
 	u, err := url.Parse(basePath)
@@ -73,7 +73,17 @@ func (c *Client) GetUsersFilesWithPrefix() ([]byte, error) {
 	q.Set("path_prefix", c.datasetFolder)
 	u.RawQuery = q.Encode()
 
-	return c.doRequest("GET", u.String(), nil)
+	respBody, err := c.doRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var files []models.FileInfo
+	err = json.Unmarshal(respBody, &files)
+	if err != nil {
+		return nil, err
+	}
+	return files, err
 }
 
 func (c *Client) GetUsersFiles() ([]models.FileInfo, error) {
