@@ -50,6 +50,7 @@ spec:
               value: {{ .MailSmptHost }}
             - name: MAIL_SMTP_PORT
               value: "{{ .MailSmptPort }}"
+            {{- if .WithDB }}
             - name: DB_HOST
               valueFrom:
                 secretKeyRef:
@@ -91,6 +92,7 @@ spec:
               value: "/.secrets/tls/tls.crt"
             - name: DB_CLIENT_KEY
               value: "/.secrets/tls/tls.key"
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
@@ -103,17 +105,21 @@ spec:
           volumeMounts:
             - name: data-volume
               mountPath: /data
+            {{- if .WithXml }}
             - name: xml-data-{{ .JobName }}
               mountPath: /data/xml
+            {{- end }}
             - name: tls
               mountPath: /.secrets/tls/
       volumes:
         - name: data-volume
           emptyDir: {}
+        {{- if .WithXml }}
         - name: xml-data-{{ .JobName }}
           secret:
             defaultMode: 288
             secretName: {{ .MailXmlSecretName }}
+        {{- end }}
         - name: tls
           secret:
             defaultMode: 288

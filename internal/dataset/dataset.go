@@ -43,13 +43,10 @@ var datasetCmd = &cobra.Command{
 			return err
 		}
 
-		resp, err := api.GetUsersFilesWithPrefix()
-		if err != nil {
-			return err
-		}
-
 		var files []models.FileInfo
-		if err := json.Unmarshal(resp, &files); err != nil {
+
+		files, err = api.GetUsersFilesWithPrefix()
+		if err != nil {
 			return err
 		}
 

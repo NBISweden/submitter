@@ -19,8 +19,12 @@ import (
 var templateFS embed.FS
 var configPath string
 var output string
+var withDB bool
+var withXml bool
 
 type TemplateData struct {
+	WithDB                       bool
+	WithXml                      bool
 	JobName                      string
 	JobReleaseLabel              string
 	JobArgs                      string
@@ -81,10 +85,14 @@ func init() {
 	cmd.AddCommand(renderCmd)
 	renderCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
 	renderCmd.Flags().StringVarP(&output, "output", "o", "job.yaml", "Path to write the rendered file to")
+	renderCmd.Flags().BoolVarP(&withDB, "database", "d", false, "Render manifest with database values included")
+	renderCmd.Flags().BoolVarP(&withXml, "xml", "x", false, "Render manifest with xml volumes included")
 }
 
 func createTemplateData(cfg *config.Config) (TemplateData, error) {
 	templateData := &TemplateData{
+		WithDB:                       withDB,
+		WithXml:                      withXml,
 		JobName:                      strings.ToLower(strings.ReplaceAll(cfg.DatasetFolder, "_", "-")),
 		JobReleaseLabel:              "sda",
 		JobArgs:                      fmt.Sprintf("[\"job\", \"%d\"]", cfg.ExpectedNrFiles),

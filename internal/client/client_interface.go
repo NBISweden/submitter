@@ -6,6 +6,7 @@ import (
 
 type APIClient interface {
 	GetUsersFiles() ([]models.FileInfo, error)
+	GetUsersFilesWithPrefix() ([]models.FileInfo, error)
 	PostFileIngest([]byte) ([]byte, error)
 	PostFileAccession(payload []byte) ([]byte, error)
 }
