@@ -42,6 +42,14 @@ func (m *mockClient) PostFileAccession(payload []byte) ([]byte, error) {
 	return response, nil
 }
 
+func (m *mockClient) PostDatasetCreate(payload []byte) ([]byte, error) {
+	response, err := json.Marshal(m.Response)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
 func newMockClient(userID string, datasetFolder string) *mockClient {
 	mock := &mockClient{
 		FilesToReturn: []models.FileInfo{
