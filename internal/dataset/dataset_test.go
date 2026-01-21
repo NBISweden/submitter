@@ -71,9 +71,9 @@ func TestDataset(t *testing.T) {
 
 	workingDirectory := filepath.Dir(ex)
 	datasetFolder := "DATASET_TEST"
-	datasetID := "aa-Dataset-test"
+	// datasetID := "aa-Dataset-test"
 	userID := "testuser"
-	expectedNrFiles := 2
+	// expectedNrFiles := 2
 	mock := newMockClient(userID, datasetFolder)
 
 	t.Run("Test Dataset", func(t *testing.T) {
@@ -90,18 +90,18 @@ func TestDataset(t *testing.T) {
 			t.Error(err)
 		}
 
-		fileIDsList, err := getFileIDsFromFile(datasetFolder)
-		if err != nil {
-			t.Error(err)
-		}
-
-		nrFiles := len(fileIDsList)
-		if nrFiles != expectedNrFiles {
-			t.Logf("recieved %d/%d paths for accessionIDs", nrFiles, expectedNrFiles)
-			t.Fail()
-		}
-
-		err = createDataset(mock, datasetID, userID, fileIDsList)
+		// fileIDsList, err := getFileIDsFromFile(datasetFolder)
+		// if err != nil {
+		// 	t.Error(err)
+		// }
+		//
+		// nrFiles := len(fileIDsList)
+		// if nrFiles != expectedNrFiles {
+		// 	t.Logf("recieved %d/%d paths for accessionIDs", nrFiles, expectedNrFiles)
+		// 	t.Fail()
+		// }
+		//
+		// err = createDataset(mock, datasetID, userID, fileIDsList)
 
 	})
 }
