@@ -28,6 +28,15 @@ type Client struct {
 	httpClient    *http.Client
 }
 
+var retryableStatusCodes = map[int]bool {
+	http.StatusBadGateway: true,
+	http.StatusGatewayTimeout: true,
+	http.StatusInternalServerError: true,
+	http.StatusServiceUnavailable: true,
+	// as of (2026-01-21) we believe there can be erronus responses from the API of 400 bad request that we wish to retry on
+	http.StatusBadRequest: true,
+}
+
 func New(cfg *config.Config) (*Client, error) {
 	httpClient := http.DefaultClient
 	if cfg.SslCaCert != "" {
@@ -139,7 +148,7 @@ func (c *Client) doRequest(method, path string, body []byte) ([]byte, error) {
 			return err
 		}
 
-		if resp.StatusCode == http.StatusInternalServerError {
+		if retryableStatusCodes[resp.StatusCode] {
 			resp.Body.Close()
 			return fmt.Errorf("non-ok response from api: %s", resp.Status)
 		}
