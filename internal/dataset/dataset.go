@@ -120,7 +120,7 @@ func getFileIDsFromFile(datasetFolder string) ([]string, error) {
 	return fileIDsList, nil
 }
 
-func createDataset(api *client.Client, datasetID string, userID string, fileIDsList []string) error {
+func createDataset(api client.APIClient, datasetID string, userID string, fileIDsList []string) error {
 	slog.Info("starting dataset")
 
 	if len(fileIDsList) > 100 {
@@ -154,7 +154,7 @@ func createDataset(api *client.Client, datasetID string, userID string, fileIDsL
 	return nil
 }
 
-func sendInChunks(fileIDsList []string, api *client.Client, datasetID string, userID string) error {
+func sendInChunks(fileIDsList []string, api client.APIClient, datasetID string, userID string) error {
 	slog.Info("more than 100 entries, sending in chunks of 100")
 	chunks := slices.Chunk(fileIDsList, 100)
 	allChunks := slices.Collect(chunks)
