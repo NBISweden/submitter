@@ -17,11 +17,19 @@ func (m *mockClient) GetUsersFiles() ([]models.FileInfo, error) {
 	return m.FilesToReturn, nil
 }
 
+func (m *mockClient) GetUsersFilesWithPrefix() ([]models.FileInfo, error) {
+	return m.FilesToReturn, nil
+}
+
 func (m *mockClient) PostFileIngest(data []byte) ([]byte, error) {
 	return m.Response, nil
 }
 
 func (m *mockClient) PostFileAccession(payload []byte) ([]byte, error) {
+	return m.Response, nil
+}
+
+func (m *mockClient) PostDatasetCreate(payload []byte) ([]byte, error) {
 	return m.Response, nil
 }
 

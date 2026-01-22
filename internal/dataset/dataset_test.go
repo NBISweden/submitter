@@ -52,11 +52,16 @@ func (m *mockClient) PostDatasetCreate(payload []byte) ([]byte, error) {
 }
 
 func newMockClient(userID string, datasetFolder string) *mockClient {
+	// data is mocked so that we expect 2 files to be included in the dataset
 	mock := &mockClient{
 		UserFilesWithPrefix: []models.FileInfo{
-			// Data mocked so that we expect 2 files to be returned
 			{InboxPath: fmt.Sprintf("/%s/%s/file1.c4gh", userID, datasetFolder), Status: "verified"},
 			{InboxPath: fmt.Sprintf("/%s/%s/file2.c4gh", userID, datasetFolder), Status: "verified"},
+		},
+		UserFiles: []models.FileInfo{
+			{InboxPath: fmt.Sprintf("/%s/%s/file1.c4gh", userID, datasetFolder), Status: "verified"},
+			{InboxPath: fmt.Sprintf("/%s/%s/file2.c4gh", userID, datasetFolder), Status: "verified"},
+			{InboxPath: fmt.Sprintf("/%s/%s/file3.c4gh", userID, "DATASET_OTHER"), Status: "verified"},
 		},
 		Response: &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString("ok"))},
 	}
@@ -71,9 +76,9 @@ func TestDataset(t *testing.T) {
 
 	workingDirectory := filepath.Dir(ex)
 	datasetFolder := "DATASET_TEST"
-	// datasetID := "aa-Dataset-test"
+	datasetID := "aa-Dataset-test"
 	userID := "testuser"
-	// expectedNrFiles := 2
+	expectedNrFiles := 2
 	mock := newMockClient(userID, datasetFolder)
 
 	t.Run("Test Dataset", func(t *testing.T) {
@@ -90,18 +95,20 @@ func TestDataset(t *testing.T) {
 			t.Error(err)
 		}
 
-		// fileIDsList, err := getFileIDsFromFile(datasetFolder)
-		// if err != nil {
-		// 	t.Error(err)
-		// }
-		//
-		// nrFiles := len(fileIDsList)
-		// if nrFiles != expectedNrFiles {
-		// 	t.Logf("recieved %d/%d paths for accessionIDs", nrFiles, expectedNrFiles)
-		// 	t.Fail()
-		// }
-		//
-		// err = createDataset(mock, datasetID, userID, fileIDsList)
+		fileIDsList, err := getFileIDs(datasetFolder, mock)
+		if err != nil {
+			t.Error(err)
+		}
 
+		nrFiles := len(fileIDsList)
+		if nrFiles != expectedNrFiles {
+			t.Logf("recieved %d/%d paths for accessionIDs", nrFiles, expectedNrFiles)
+			t.Fail()
+		}
+
+		err = createDataset(mock, datasetID, userID, fileIDsList)
+		if err != nil {
+			t.Error(err)
+		}
 	})
 }

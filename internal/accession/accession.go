@@ -9,13 +9,11 @@ import (
 	"log/slog"
 	"math/big"
 	"os"
-	"strings"
 
 	"github.com/NBISweden/sda-bpctl/cmd"
 	"github.com/NBISweden/sda-bpctl/helpers"
 	"github.com/NBISweden/sda-bpctl/internal/client"
 	"github.com/NBISweden/sda-bpctl/internal/config"
-	"github.com/NBISweden/sda-bpctl/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +56,7 @@ var accessionCmd = &cobra.Command{
 			return err
 		}
 
-		paths := getPathsForAccessionIDs(files)
+		paths := helpers.GetPathsForAccessionIDs(files, datasetFolder)
 		if dryRun {
 			slog.Info("dry run enabled, no accession ids will be created")
 			return nil
@@ -93,7 +91,7 @@ func Run(api client.APIClient, datasetFolder string, userID string) ([]string, e
 		return nil, err
 	}
 
-	paths := getPathsForAccessionIDs(files)
+	paths := helpers.GetPathsForAccessionIDs(files, datasetFolder)
 	accessionIDs, err := postAccessionIDs(api, paths, userID)
 	if err != nil {
 		return nil, err
@@ -103,18 +101,6 @@ func Run(api client.APIClient, datasetFolder string, userID string) ([]string, e
 	return accessionIDs, nil
 }
 
-func getPathsForAccessionIDs(files []models.FileInfo) []string {
-	var paths []string
-	for _, f := range files {
-		if f.Status == "verified" &&
-			strings.Contains(f.InboxPath, datasetFolder) &&
-			!strings.Contains(f.InboxPath, "PRIVATE") {
-			paths = append(paths, f.InboxPath)
-		}
-	}
-	slog.Info("files found for accession id creation", "files_found", len(paths))
-	return paths
-}
 
 func postAccessionIDs(api client.APIClient, paths []string, userID string) ([]string, error) {
 	var accessionIDs []string
