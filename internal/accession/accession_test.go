@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/NBISweden/sda-bpctl/helpers"
 	"github.com/NBISweden/sda-bpctl/internal/models"
 )
 
@@ -84,7 +85,7 @@ func TestAccession(t *testing.T) {
 			t.Error(err)
 		}
 
-		paths := getPathsForAccessionIDs(files)
+		paths := helpers.GetPathsForAccessionIDs(files, datasetFolder)
 		nrPaths := len(paths)
 		if nrPaths != expectedPaths {
 			t.Logf("recieved %d/%d paths for accessionIDs", nrPaths, expectedPaths)

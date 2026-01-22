@@ -57,7 +57,7 @@ var datasetCmd = &cobra.Command{
 			}
 		}
 
-		fileIDsList, err := getFileIDsFromFile(datasetFolder)
+		fileIDsList, err := getFileIDs(datasetFolder, api)
 		if err != nil {
 			return err
 		}
@@ -103,9 +103,17 @@ func Run(api *client.Client, datasetFolder string, datasetID string, userID stri
 	return nil
 }
 
-func getFileIDsFromFile(datasetFolder string) ([]string, error) {
+func getFileIDs(datasetFolder string, api client.APIClient) ([]string, error) {
 	var fileIDsList []string
 	filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+		files, err := api.GetUsersFiles()
+		if err != nil {
+			return nil, err
+		}
+		fileIDsList = helpers.GetPathsForAccessionIDs(files, datasetFolder)
+		return fileIDsList, nil
+	}
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
