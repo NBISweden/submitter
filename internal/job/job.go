@@ -51,7 +51,7 @@ var jobCmd = &cobra.Command{
 
 func init() {
 	cmd.AddCommand(jobCmd)
-	jobCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
+	jobCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
 }
 
 func runJob(expectedFiles int) error {

@@ -43,8 +43,8 @@ var mailCmd = &cobra.Command{
 func init() {
 	cmd.AddCommand(mailCmd)
 	mailCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will send all emails to the address in configuration.Email (env or yaml conf)")
-	mailCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
-	mailCmd.Flags().StringVar(&dataDirectory, "data-directory", "data", "Directory to retrieve files from to attach in mail notifications")
+	mailCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
+	mailCmd.Flags().StringVarP(&dataDirectory, "data-directory", "d", "data", "Directory to retrieve files from to attach in mail notifications")
 }
 
 type Mail struct {

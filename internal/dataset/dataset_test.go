@@ -14,9 +14,9 @@ import (
 )
 
 type mockClient struct {
-	UserFiles []models.FileInfo
+	UserFiles           []models.FileInfo
 	UserFilesWithPrefix []models.FileInfo
-	Response      *http.Response
+	Response            *http.Response
 }
 
 func (m *mockClient) GetUsersFiles() ([]models.FileInfo, error) {

@@ -48,7 +48,7 @@ var ingestCmd = &cobra.Command{
 func init() {
 	cmd.AddCommand(ingestCmd)
 	ingestCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
-	ingestCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
+	ingestCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
 }
 
 func Run(api client.APIClient, datasetFolder string, userID string, expectedFiles int) (int, error) {

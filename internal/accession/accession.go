@@ -51,7 +51,7 @@ var accessionCmd = &cobra.Command{
 		}
 		defer file.Close() //nolint:errcheck
 
-		files, err := api.GetUsersFiles()
+		files, err := api.GetUsersFilesWithPrefix()
 		if err != nil {
 			return err
 		}
@@ -80,13 +80,13 @@ var accessionCmd = &cobra.Command{
 func init() {
 	cmd.AddCommand(accessionCmd)
 	accessionCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
-	accessionCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
-	accessionCmd.Flags().StringVar(&dataDirectory, "data-directory", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
+	accessionCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
+	accessionCmd.Flags().StringVarP(&dataDirectory, "data-directory", "d", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
 }
 
 func Run(api client.APIClient, datasetFolder string, userID string) ([]string, error) {
 	slog.Info("starting accession")
-	files, err := api.GetUsersFiles()
+	files, err := api.GetUsersFilesWithPrefix()
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,6 @@ func Run(api client.APIClient, datasetFolder string, userID string) ([]string, e
 	slog.Info("accession complete")
 	return accessionIDs, nil
 }
-
 
 func postAccessionIDs(api client.APIClient, paths []string, userID string) ([]string, error) {
 	var accessionIDs []string
