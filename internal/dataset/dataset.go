@@ -80,8 +80,8 @@ var datasetCmd = &cobra.Command{
 func init() {
 	cmd.AddCommand(datasetCmd)
 	datasetCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
-	datasetCmd.Flags().StringVar(&configPath, "config", "config.yaml", "Path to configuration file")
-	datasetCmd.Flags().StringVar(&dataDirectory, "data-directory", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
+	datasetCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
+	datasetCmd.Flags().StringVarP(&dataDirectory, "data-directory", "d", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
 }
 
 type Payload struct {
@@ -107,7 +107,7 @@ func getFileIDs(datasetFolder string, api client.APIClient) ([]string, error) {
 	var fileIDsList []string
 	filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
 	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
-		files, err := api.GetUsersFiles()
+		files, err := api.GetUsersFilesWithPrefix()
 		if err != nil {
 			return nil, err
 		}

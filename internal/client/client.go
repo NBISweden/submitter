@@ -28,11 +28,11 @@ type Client struct {
 	httpClient    *http.Client
 }
 
-var retryableStatusCodes = map[int]bool {
-	http.StatusBadGateway: true,
-	http.StatusGatewayTimeout: true,
+var retryableStatusCodes = map[int]bool{
+	http.StatusBadGateway:          true,
+	http.StatusGatewayTimeout:      true,
 	http.StatusInternalServerError: true,
-	http.StatusServiceUnavailable: true,
+	http.StatusServiceUnavailable:  true,
 	// as of (2026-01-21) we believe there can be erronus responses from the API of 400 bad request that we wish to retry on
 	http.StatusBadRequest: true,
 }
@@ -199,7 +199,7 @@ func (c *Client) WaitForAccession(target int, interval time.Duration, timeout ti
 }
 
 func (c *Client) getVerifiedFilePaths() ([]string, error) {
-	files, err := c.GetUsersFiles()
+	files, err := c.GetUsersFilesWithPrefix()
 	if err != nil {
 		return nil, err
 	}

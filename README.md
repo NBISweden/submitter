@@ -1,9 +1,10 @@
 # sda-bpctl
 
-
 A tool that can be used to deal with administrative workflows for the big picture project. It supports three primary functions, making data ingestion, assigning accession ids to each ingested file, and creating a dataset for all files ingested with a accession id.
 
-It can be used either locally as a cli tool or be packaged and run as a job in kubernetes.
+It can be used either locally as a cli tool or be packaged and run as a job in kubernetes. This is on one hand powerfull and on the other hand, sometimes confusing and unintuitive, in an attempt to clarify the differance in logic based on how the tool is used the terms used will be **job** and **cli** in **bold** when describing the different logics.
+
+The core logic of this tool is wrapping logic around the sensetive data archive (SDA) api. To fully understand how this is expected to work you should be familiar with the sda and it's api.
 
 ### installation
 
@@ -27,6 +28,7 @@ Commands must be one of:
 - `dataset`
 - `mail`
 - `job`
+- `render`
 
 #### examples
 
@@ -63,9 +65,7 @@ and apply it using `kubectl`:
 kubectl apply -f job.yaml
 ```
 
-
 will render a job.yaml manifest for you based on the configuration values you have supplied
-
 
 ### configuration
 
@@ -77,6 +77,8 @@ see the `config.yaml.example` for a base template with what fields to fill
 | USER_ID | "user-1234" | The user ID for the uploader, acts as identifier for the uploaded data | `ingest`, `accession`, `dataset`, `job`, `render` |
 | DATASET_ID | "aa-Dataset-abc" | The ID that will be set for the finalized dataset, will be used during the `dataset` command | `ingest`, `accession`, `dataset`, `job`, `mail`, `render` |
 | DATASET_FOLDER | "DATASET_ABC" | The folder where the uploaded data resides in s3inbox | `ingest`, `accession`, `dataset`, `job`, `mail`, `render` |
+| JOB_TIMEOUT | 3 | A integer value, representing the number of minutes before the job times out when waiting for `accession` | `job`, `render` |
+| JOB_POLL_RATE | 2 | A integer value, representing the number of miutes between each polling intervall when waiting for `accession`, needs to be less than  the `JOB_TIMEOUT` value | `job`, `render` |
 | JOB_EXPECTED_NR_FILES | 0 | The expected number of files to be part of the finalized dataset, set this when using `render` to include it in the rendered job.yaml | `job`, `render` |
 | CLIENT_API_HOST | "https://api.example.com" | The hostname for the SDA API to communicate with | `ingest`, `accession`, `dataset`, `job` |
 | CLIENT_ACCESS_TOKEN | "youraccesstoken" | The access token to authenticate towards the client api host | Yes | `ingest`, `accession`, `dataset`, `job` |
@@ -88,6 +90,32 @@ see the `config.yaml.example` for a base template with what fields to fill
 | MAIL_SMTP_PORT | 587 | Port for the mail server | `mail` |
 | DB_SECRET_NAME | "db-secret" | The name of the kubernetes secret that holds connection details for the sda database | `job` ,`render` |
 | CERT_SECRET_NAME | "cert-secret" | The name of the kubernetes secret that holds a tls certificate to use | `job`, `render` |
+
+### ingest
+
+The ingtest command will lookup all the files for the `USER_ID` that resides in `DATASET_FOLDER`, filter out all files that are not in either a directory `LANDING_PAGE` or `PRIVATE` and any file that does not have the event `uploaded`. 
+
+**job:** the number of files retrieved will be compared to the `JOB_EXPECTED_NR_FILES` value, if they match the files will be sent for ingestion. If not the job will fail. 
+
+**cli:** the files found will be sent for ingestion without evaluation. In that case the responsibility is on the user to ensure with a `--dry-run` before that the number of files are the desired ammount.
+
+Files sent to ingestion are done so trough the sda api `POST /ingest` endpoint.
+
+### accession
+
+The accession command will get a list of files for the `USER_ID` that resides in `DATASET_FOLDER` and have the event `verified`.
+
+**job:** will poll the api according to `JOB_POLL_RATE` and wait untill it finds the ammount of files that matches `JOB_EXPECTED_NR_FILES` or untill it times out according to `JOB_TIMEOUT`. When the expected number of files are found it will send a request to the sda api `POST /accession` endpoint with the files.
+
+**cli:** will try create a file called `<DATASET_FODLER>-fileIDs.txt` in the `--data-directory` directory. It will retreive the list of files and after successfull call to `POST /accession` it will write the accessionIDs to the file `<DATASET_FOLDER>-fileIDs.txt`. This is legacy logic owned from the `ingestor.sh` scipt and makes it so that you can store a intermidate state and keep track of the accession ids retrieved between runs of `accession` and `dataset`.
+
+### dataset
+
+The dataset command will retrieve a list of accessionIDs and send a request to the sda api `POST /dataset`
+
+**job:** will consume the list of accessionIDs by a in memory variable produced by the previous step in `accession` and send a list of files to be mapped to a dataset to `POST /dataset/create`
+
+**cli:** will try to read from `<DATASET_FOLDER>-fileIDs.txt` to identify the files to be included in a dataset. If the file cannot be found it will make a call to `GET /user/files?path_prefix=<DATASET_FOLDER>` to find them and send a request to `POST /dataset/create` with the files.
 
 ### testing
 
