@@ -47,9 +47,9 @@ spec:
             - name: MAIL_PASSWORD
               value: {{ .MailPassword }}
             - name: MAIL_SMTP_HOST
-              value: {{ .MailSmptHost }}
+              value: {{ .MailSmtpHost }}
             - name: MAIL_SMTP_PORT
-              value: "{{ .MailSmptPort }}"
+              value: "{{ .MailSmtpPort }}"
             {{- if .WithDB }}
             - name: DB_HOST
               valueFrom:

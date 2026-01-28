@@ -2,9 +2,9 @@
 
 A tool that can be used to deal with administrative workflows for the big picture project. It supports three primary functions, making data ingestion, assigning accession ids to each ingested file, and creating a dataset for all files ingested with a accession id.
 
-It can be used either locally as a cli tool or be packaged and run as a job in kubernetes. This is on one hand powerfull and on the other hand, sometimes confusing and unintuitive, in an attempt to clarify the differance in logic based on how the tool is used the terms used will be **job** and **cli** in **bold** when describing the different logics.
+It can be used either locally as a cli tool or be packaged and run as a job in kubernetes. This is on one hand powerful and on the other hand, sometimes confusing and unintuitive, in an attempt to clarify the difference in logic based on how the tool is used the terms used will be **job** and **cli** in **bold** when describing the different logics.
 
-The core logic of this tool is wrapping logic around the sensetive data archive (SDA) api. To fully understand how this is expected to work you should be familiar with the sda and it's api.
+The core logic of this tool is wrapping logic around the sensitive data archive (SDA) api. To fully understand how this is expected to work you should be familiar with the sda and its api.
 
 ### installation
 
@@ -19,7 +19,7 @@ bpctl -h
 
 ### usage
 
-The CLI have one requiered argument, called a **command** and non-requiered input arguments as flags. The rest of configuration is done through a config file. See more in the configuration section.
+The CLI have one required argument, called a **command** and non-required input arguments as flags. The rest of configuration is done through a config file. See more in the configuration section.
 
 Commands must be one of:
 
@@ -32,28 +32,28 @@ Commands must be one of:
 
 #### examples
 
-some examples to demonstrate how the tool can be used
+Some examples to demonstrate how the tool can be used
 
-running ingest 
+Running ingest 
 ```bash
 ./bpctl ingest
 ```
 
-running accession with a specific config.yaml
+Running accession with a specific config.yaml
 ```bash
 ./bpctl accession --config /home/config.yaml
 ```
 
-running mail notification with the dry-run flag
+Running mail notification with the dry-run flag
 ```bash
 ./bpctl mail --dry-run
 ```
 
 #### kubernetes job
 
-The `job` command is meant to try and run all the steps of the dataset submission process in order; ingest -> accession -> dataset. It will need environment variables to configure and will need to be adjusted for the environment to run in. The `job` command also needs a input argument that represents the ammount of files that is expected to be included in the finalized dataset. If at some point during the process this number does not match the job will fail and the user have to take over the process from that point.
+The `job` command is meant to try and run all the steps of the dataset submission process in order; ingest -> accession -> dataset. It will need environment variables to configure and will need to be adjusted for the environment to run in. The `job` command also needs a input argument that represents the amount of files that is expected to be included in the finalized dataset. If at some point during the process this number does not match the job will fail and the user have to take over the process from that point.
 
-specify your maniifest, for example in a `job.yaml` or you can render a templated manifest based on your `config.yaml` using the `render` command
+specify your manifest, for example in a `job.yaml` or you can render a templated manifest based on your `config.yaml` using the `render` command
 
 ```bash
 ./bpctl render -o job.yaml
@@ -78,7 +78,7 @@ see the `config.yaml.example` for a base template with what fields to fill
 | DATASET_ID | "aa-Dataset-abc" | The ID that will be set for the finalized dataset, will be used during the `dataset` command | `ingest`, `accession`, `dataset`, `job`, `mail`, `render` |
 | DATASET_FOLDER | "DATASET_ABC" | The folder where the uploaded data resides in s3inbox | `ingest`, `accession`, `dataset`, `job`, `mail`, `render` |
 | JOB_TIMEOUT | 3 | A integer value, representing the number of minutes before the job times out when waiting for `accession` | `job`, `render` |
-| JOB_POLL_RATE | 2 | A integer value, representing the number of miutes between each polling intervall when waiting for `accession`, needs to be less than  the `JOB_TIMEOUT` value | `job`, `render` |
+| JOB_POLL_RATE | 2 | A integer value, representing the number of minutes between each polling interval when waiting for `accession`, needs to be less than  the `JOB_TIMEOUT` value | `job`, `render` |
 | JOB_EXPECTED_NR_FILES | 0 | The expected number of files to be part of the finalized dataset, set this when using `render` to include it in the rendered job.yaml | `job`, `render` |
 | CLIENT_API_HOST | "https://api.example.com" | The hostname for the SDA API to communicate with | `ingest`, `accession`, `dataset`, `job` |
 | CLIENT_ACCESS_TOKEN | "youraccesstoken" | The access token to authenticate towards the client api host | Yes | `ingest`, `accession`, `dataset`, `job` |
@@ -93,11 +93,11 @@ see the `config.yaml.example` for a base template with what fields to fill
 
 ### ingest
 
-The ingtest command will lookup all the files for the `USER_ID` that resides in `DATASET_FOLDER`, filter out all files that are not in either a directory `LANDING_PAGE` or `PRIVATE` and any file that does not have the event `uploaded`. 
+The ingest command will lookup all the files for the `USER_ID` that resides in `DATASET_FOLDER`, filter out all files that are not in either a directory `LANDING_PAGE` or `PRIVATE` and any file that does not have the event `uploaded`. 
 
 **job:** the number of files retrieved will be compared to the `JOB_EXPECTED_NR_FILES` value, if they match the files will be sent for ingestion. If not the job will fail. 
 
-**cli:** the files found will be sent for ingestion without evaluation. In that case the responsibility is on the user to ensure with a `--dry-run` before that the number of files are the desired ammount.
+**cli:** the files found will be sent for ingestion without evaluation. In that case the responsibility is on the user to ensure with a `--dry-run` before that the number of files are the desired amount.
 
 Files sent to ingestion are done so trough the sda api `POST /ingest` endpoint.
 
@@ -105,9 +105,9 @@ Files sent to ingestion are done so trough the sda api `POST /ingest` endpoint.
 
 The accession command will get a list of files for the `USER_ID` that resides in `DATASET_FOLDER` and have the event `verified`.
 
-**job:** will poll the api according to `JOB_POLL_RATE` and wait untill it finds the ammount of files that matches `JOB_EXPECTED_NR_FILES` or untill it times out according to `JOB_TIMEOUT`. When the expected number of files are found it will send a request to the sda api `POST /accession` endpoint with the files.
+**job:** will poll the api according to `JOB_POLL_RATE` and wait until it finds the amount of files that matches `JOB_EXPECTED_NR_FILES` or until it times out according to `JOB_TIMEOUT`. When the expected number of files are found it will send a request to the sda api `POST /accession` endpoint with the files.
 
-**cli:** will try create a file called `<DATASET_FODLER>-fileIDs.txt` in the `--data-directory` directory. It will retreive the list of files and after successfull call to `POST /accession` it will write the accessionIDs to the file `<DATASET_FOLDER>-fileIDs.txt`. This is legacy logic owned from the `ingestor.sh` scipt and makes it so that you can store a intermidate state and keep track of the accession ids retrieved between runs of `accession` and `dataset`.
+**cli:** will try create a file called `<DATASET_FOLDER>-fileIDs.txt` in the `--data-directory` directory. It will retrieve the list of files and after successful call to `POST /accession` it will write the accessionIDs to the file `<DATASET_FOLDER>-fileIDs.txt`. This is legacy logic owned from the `ingestor.sh` script and makes it so that you can store a intermediate state and keep track of the accession ids retrieved between runs of `accession` and `dataset`.
 
 ### dataset
 

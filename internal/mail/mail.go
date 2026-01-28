@@ -144,14 +144,14 @@ func renderTemplate(filename string, data TemplateData) (string, error) {
 	return buf.String(), nil
 }
 
-func (mail *Mail) send(subject string, message string, reciever string, attachements []string, ccs []string) error {
+func (mail *Mail) send(subject string, message string, receiver string, attachments []string, ccs []string) error {
 	m := gomail.NewMsg()
 
 	if err := m.From(mail.from); err != nil {
 		return err
 	}
 
-	if err := m.To(reciever); err != nil {
+	if err := m.To(receiver); err != nil {
 		return err
 	}
 
@@ -165,12 +165,12 @@ func (mail *Mail) send(subject string, message string, reciever string, attachem
 
 	m.SetBodyString("text/html", message)
 
-	// Enforce that the wanted attachements are files that exists
-	if err := attachementsExists(attachements); err != nil {
+	// Enforce that the wanted attachments are files that exists
+	if err := attachmentsExists(attachments); err != nil {
 		return err
 	}
 
-	for _, file := range attachements {
+	for _, file := range attachments {
 		m.AttachFile(file)
 	}
 
@@ -178,26 +178,26 @@ func (mail *Mail) send(subject string, message string, reciever string, attachem
 	if err != nil {
 		return err
 	}
-	slog.Info("[mail] notification sent about dataset completion", "reciever", reciever)
+	slog.Info("[mail] notification sent about dataset completion", "receiver", receiver)
 	return client.DialAndSend(m)
 }
 
-func attachementsExists(attachements []string) error {
-	for _, attachement := range attachements {
-		info, err := os.Stat(attachement)
+func attachmentsExists(attachments []string) error {
+	for _, attachment := range attachments {
+		info, err := os.Stat(attachment)
 		if err != nil {
 			if os.IsNotExist(err) {
-				return fmt.Errorf("file does not exist: %s", attachement)
+				return fmt.Errorf("file does not exist: %s", attachment)
 			}
-			return fmt.Errorf("error checking file %s: %w", attachement, err)
+			return fmt.Errorf("error checking file %s: %w", attachment, err)
 		}
 
 		if info.IsDir() {
-			return fmt.Errorf("path is a directory, not a file: %s", attachement)
+			return fmt.Errorf("path is a directory, not a file: %s", attachment)
 		}
 
 		if info.Size() == 0 {
-			return fmt.Errorf("file is empty: %s", attachement)
+			return fmt.Errorf("file is empty: %s", attachment)
 		}
 	}
 

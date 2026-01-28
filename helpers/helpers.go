@@ -41,8 +41,8 @@ type TemplateData struct {
 	MailUploader                 string
 	MailAddress                  string
 	MailPassword                 string
-	MailSmptHost                 string
-	MailSmptPort                 string
+	MailSmtpHost                 string
+	MailSmtpPort                 string
 	DbSecretName                 string
 	DbCaCert                     string
 	DbClientCert                 string
@@ -109,8 +109,8 @@ func createTemplateData(cfg *config.Config) (TemplateData, error) {
 		MailUploader:                 cfg.MailUploader,
 		MailAddress:                  cfg.MailAddress,
 		MailPassword:                 cfg.MailPassword,
-		MailSmptHost:                 cfg.MailSmtpHost,
-		MailSmptPort:                 strconv.Itoa(cfg.MailSmtpPort),
+		MailSmtpHost:                 cfg.MailSmtpHost,
+		MailSmtpPort:                 strconv.Itoa(cfg.MailSmtpPort),
 		CertSecretName:               cfg.CertSecretName,
 		DbSecretName:                 cfg.DbSecretName,
 	}

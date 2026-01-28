@@ -46,7 +46,7 @@ var accessionCmd = &cobra.Command{
 		filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
 		file, err := createFileIDFile(filePath, dryRun)
 		if err != nil {
-			slog.Error("error occoured when trying to create file", "filePath", filePath)
+			slog.Error("error occurred when trying to create file", "filePath", filePath)
 			return err
 		}
 		defer file.Close() //nolint:errcheck
