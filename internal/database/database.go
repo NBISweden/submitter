@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/NBISweden/sda-bpctl/internal/config"
+	// Register the postgres driver
 	_ "github.com/lib/pq"
 )
 

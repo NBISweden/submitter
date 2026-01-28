@@ -33,7 +33,7 @@ spec:
             - name: SSL_CA_CERT
               value: "{{ .SslCaCert }}"
             - name: CLIENT_API_HOST
-              value: {{ .ClientApiHost }}
+              value: {{ .ClientAPIHost }}
             - name: CLIENT_ACCESS_TOKEN
               value: {{ .ClientAccessToken }}
             - name: MAIL_UPLOADER_NAME
@@ -47,9 +47,9 @@ spec:
             - name: MAIL_PASSWORD
               value: {{ .MailPassword }}
             - name: MAIL_SMTP_HOST
-              value: {{ .MailSmtpHost }}
+              value: {{ .MailSMTPHost }}
             - name: MAIL_SMTP_PORT
-              value: "{{ .MailSmtpPort }}"
+              value: "{{ .MailSMTPPort }}"
             {{- if .WithDB }}
             - name: DB_HOST
               valueFrom:
@@ -105,7 +105,7 @@ spec:
           volumeMounts:
             - name: data-volume
               mountPath: /data
-            {{- if .WithXml }}
+            {{- if .WithXML }}
             - name: xml-data-{{ .JobName }}
               mountPath: /data/xml
             {{- end }}
@@ -114,11 +114,11 @@ spec:
       volumes:
         - name: data-volume
           emptyDir: {}
-        {{- if .WithXml }}
+        {{- if .WithXML }}
         - name: xml-data-{{ .JobName }}
           secret:
             defaultMode: 288
-            secretName: {{ .MailXmlSecretName }}
+            secretName: {{ .MailXMLSecretName }}
         {{- end }}
         - name: tls
           secret:

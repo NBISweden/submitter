@@ -15,7 +15,7 @@ type Config struct {
 	Timeout                      int    `mapstructure:"JOB_TIMEOUT"`
 	PollRate                     int    `mapstructure:"JOB_POLL_RATE"`
 	ExpectedNrFiles              int    `mapstructure:"JOB_EXPECTED_NR_FILES"`
-	ClientApiHost                string `mapstructure:"CLIENT_API_HOST"`
+	ClientAPIHost                string `mapstructure:"CLIENT_API_HOST"`
 	ClientAccessToken            string `mapstructure:"CLIENT_ACCESS_TOKEN"`
 	CertSecretName               string `mapstructure:"CERT_SECRET_NAME"`
 	DbSecretName                 string `mapstructure:"DB_SECRET_NAME"`
@@ -28,11 +28,11 @@ type Config struct {
 	DbSslMode                    string `mapstructure:"DB_SSL_MODE"`
 	DbClientCert                 string `mapstructure:"DB_CLIENT_CERT"`
 	DbClientKey                  string `mapstructure:"DB_CLIENT_KEY"`
-	MailXmlSecretName            string `mapstructure:"MAIL_XML_SECRET_NAME"`
+	MailXMLSecretName            string `mapstructure:"MAIL_XML_SECRET_NAME"`
 	MailAddress                  string `mapstructure:"MAIL_ADDRESS"`
 	MailPassword                 string `mapstructure:"MAIL_PASSWORD"`
-	MailSmtpHost                 string `mapstructure:"MAIL_SMTP_HOST"`
-	MailSmtpPort                 int    `mapstructure:"MAIL_SMTP_PORT"`
+	MailSMTPHost                 string `mapstructure:"MAIL_SMTP_HOST"`
+	MailSMTPPort                 int    `mapstructure:"MAIL_SMTP_PORT"`
 	MailUploaderName             string `mapstructure:"MAIL_UPLOADER_NAME"`
 	MailUploaderOrganizationName string `mapstructure:"MAIL_UPLOADER_ORGANIZATION_NAME"`
 	MailUploader                 string `mapstructure:"MAIL_UPLOADER"`

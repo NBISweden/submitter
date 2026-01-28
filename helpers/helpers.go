@@ -21,11 +21,11 @@ var templateFS embed.FS
 var configPath string
 var output string
 var withDB bool
-var withXml bool
+var withXML bool
 
 type TemplateData struct {
 	WithDB                       bool
-	WithXml                      bool
+	WithXML                      bool
 	JobName                      string
 	JobReleaseLabel              string
 	JobArgs                      string
@@ -33,16 +33,16 @@ type TemplateData struct {
 	DatasetID                    string
 	DatasetFolder                string
 	SslCaCert                    string
-	ClientApiHost                string
+	ClientAPIHost                string
 	ClientAccessToken            string
-	MailXmlSecretName            string
+	MailXMLSecretName            string
 	MailUploaderName             string
 	MailUploaderOrganizationName string
 	MailUploader                 string
 	MailAddress                  string
 	MailPassword                 string
-	MailSmtpHost                 string
-	MailSmtpPort                 string
+	MailSMTPHost                 string
+	MailSMTPPort                 string
 	DbSecretName                 string
 	DbCaCert                     string
 	DbClientCert                 string
@@ -87,13 +87,13 @@ func init() {
 	renderCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
 	renderCmd.Flags().StringVarP(&output, "output", "o", "job.yaml", "Path to write the rendered file to")
 	renderCmd.Flags().BoolVarP(&withDB, "database", "d", false, "Render manifest with database values included")
-	renderCmd.Flags().BoolVarP(&withXml, "xml", "x", false, "Render manifest with xml volumes included")
+	renderCmd.Flags().BoolVarP(&withXML, "xml", "x", false, "Render manifest with xml volumes included")
 }
 
 func createTemplateData(cfg *config.Config) (TemplateData, error) {
 	templateData := &TemplateData{
 		WithDB:                       withDB,
-		WithXml:                      withXml,
+		WithXML:                      withXML,
 		JobName:                      strings.ToLower(strings.ReplaceAll(cfg.DatasetFolder, "_", "-")),
 		JobReleaseLabel:              "sda",
 		JobArgs:                      fmt.Sprintf("[\"job\", \"%d\"]", cfg.ExpectedNrFiles),
@@ -101,16 +101,16 @@ func createTemplateData(cfg *config.Config) (TemplateData, error) {
 		DatasetID:                    cfg.DatasetID,
 		DatasetFolder:                cfg.DatasetFolder,
 		SslCaCert:                    "/.secrets/tls/ca.crt",
-		ClientApiHost:                cfg.ClientApiHost,
+		ClientAPIHost:                cfg.ClientAPIHost,
 		ClientAccessToken:            cfg.ClientAccessToken,
-		MailXmlSecretName:            cfg.MailXmlSecretName,
+		MailXMLSecretName:            cfg.MailXMLSecretName,
 		MailUploaderName:             cfg.MailUploaderName,
 		MailUploaderOrganizationName: cfg.MailUploaderOrganizationName,
 		MailUploader:                 cfg.MailUploader,
 		MailAddress:                  cfg.MailAddress,
 		MailPassword:                 cfg.MailPassword,
-		MailSmtpHost:                 cfg.MailSmtpHost,
-		MailSmtpPort:                 strconv.Itoa(cfg.MailSmtpPort),
+		MailSMTPHost:                 cfg.MailSMTPHost,
+		MailSMTPPort:                 strconv.Itoa(cfg.MailSMTPPort),
 		CertSecretName:               cfg.CertSecretName,
 		DbSecretName:                 cfg.DbSecretName,
 	}

@@ -102,7 +102,7 @@ func ingestFiles(api client.APIClient, datasetFolder string, userID string, file
 
 		_, err := api.PostFileIngest(data)
 		if err != nil {
-			okResponses -= 1
+			okResponses--
 			slog.Warn("file not ingested", "filepath", path, "err", err)
 		}
 	}

@@ -60,7 +60,7 @@ func New(cfg *config.Config) (*Client, error) {
 
 	client := &Client{
 		accessToken:   cfg.ClientAccessToken,
-		apiHost:       cfg.ClientApiHost,
+		apiHost:       cfg.ClientAPIHost,
 		userID:        cfg.UserID,
 		datasetFolder: cfg.DatasetFolder,
 		datasetID:     cfg.DatasetID,
