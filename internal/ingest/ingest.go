@@ -59,7 +59,7 @@ func Run(api client.APIClient, datasetFolder string, userID string, expectedFile
 
 	filteredFiles := filterFiles(files, datasetFolder)
 	if expectedFiles != len(filteredFiles) {
-		return 0, fmt.Errorf("expected nr of files does not match files from db, got %d expected %d", len(files), expectedFiles)
+		return 0, fmt.Errorf("expected number of files does not match files from db, got %d expected %d", len(files), expectedFiles)
 	}
 	return ingestFiles(api, datasetFolder, userID, files)
 }
@@ -73,7 +73,7 @@ func filterFiles(files []models.FileInfo, datasetFolder string) []string {
 		if !strings.Contains(f.InboxPath, datasetFolder) {
 			continue
 		}
-		if strings.Contains(f.InboxPath, "PRIVATE") || strings.Contains(f.InboxPath, "LANDING PAGE") {
+		if strings.Contains(f.InboxPath, "PRIVATE") || strings.Contains(f.InboxPath, "LANDING_PAGE") {
 			continue
 		}
 		filteredFiles = append(filteredFiles, f.InboxPath)
@@ -85,7 +85,7 @@ func ingestFiles(api client.APIClient, datasetFolder string, userID string, file
 	slog.Info("starting ingest")
 	fileList := filterFiles(files, datasetFolder)
 	filesCount := len(fileList)
-	okResponds := len(fileList)
+	okResponses := len(fileList)
 
 	slog.Info("number of files to ingest", "filesCount", filesCount)
 	if dryRun {
@@ -102,11 +102,11 @@ func ingestFiles(api client.APIClient, datasetFolder string, userID string, file
 
 		_, err := api.PostFileIngest(data)
 		if err != nil {
-			okResponds -= 1
+			okResponses -= 1
 			slog.Warn("file not ingested", "filepath", path, "err", err)
 		}
 	}
 
-	slog.Info(fmt.Sprintf("ingested %d/%d successful responses", okResponds, filesCount))
-	return okResponds, nil
+	slog.Info(fmt.Sprintf("ingested %d/%d successful responses", okResponses, filesCount))
+	return okResponses, nil
 }
