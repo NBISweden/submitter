@@ -74,8 +74,8 @@ type Notifiers struct {
 
 func New(c *config.Config) *Mail {
 	m := &Mail{
-		smtpHost: c.MailSmtpHost,
-		smtpPort: c.MailSmtpPort,
+		smtpHost: c.MailSMTPHost,
+		smtpPort: c.MailSMTPPort,
 		email:    c.MailAddress,
 		password: c.MailPassword,
 		from:     c.MailAddress,
