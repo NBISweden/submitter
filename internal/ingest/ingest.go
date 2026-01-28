@@ -59,7 +59,7 @@ func Run(api client.APIClient, datasetFolder string, userID string, expectedFile
 
 	filteredFiles := filterFiles(files, datasetFolder)
 	if expectedFiles != len(filteredFiles) {
-		return 0, fmt.Errorf("expected number of files does not match files from db, got %d expected %d", len(files), expectedFiles)
+		return 0, fmt.Errorf("expected nr of files does not match files from db, got %d expected %d", len(files), expectedFiles)
 	}
 	return ingestFiles(api, datasetFolder, userID, files)
 }

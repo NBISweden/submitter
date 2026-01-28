@@ -62,7 +62,7 @@ var datasetCmd = &cobra.Command{
 			return err
 		}
 
-		slog.Info("nr of files included in dataset", "nr_files", (len(fileIDsList)))
+		slog.Info("number of files included in dataset", "nr_files", (len(fileIDsList)))
 		if dryRun {
 			slog.Info("dry run enabled, no dataset will be created")
 			return nil
