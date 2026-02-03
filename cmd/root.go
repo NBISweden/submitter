@@ -23,3 +23,7 @@ func Execute() error {
 func AddCommand(command *cobra.Command) {
 	rootCmd.AddCommand(command)
 }
+
+func AddVersion(v string) {
+	rootCmd.Version = v
+}
