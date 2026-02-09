@@ -35,7 +35,6 @@ type TemplateData struct {
 	SslCaCert                    string
 	ClientAPIHost                string
 	ClientAccessToken            string
-	MailXMLSecretName            string
 	MailUploaderName             string
 	MailUploaderOrganizationName string
 	MailUploader                 string
@@ -103,7 +102,6 @@ func createTemplateData(cfg *config.Config) (TemplateData, error) {
 		SslCaCert:                    "/.secrets/tls/ca.crt",
 		ClientAPIHost:                cfg.ClientAPIHost,
 		ClientAccessToken:            cfg.ClientAccessToken,
-		MailXMLSecretName:            cfg.MailXMLSecretName,
 		MailUploaderName:             cfg.MailUploaderName,
 		MailUploaderOrganizationName: cfg.MailUploaderOrganizationName,
 		MailUploader:                 cfg.MailUploader,

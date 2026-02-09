@@ -28,7 +28,6 @@ type Config struct {
 	DbSslMode                    string `mapstructure:"DB_SSL_MODE"`
 	DbClientCert                 string `mapstructure:"DB_CLIENT_CERT"`
 	DbClientKey                  string `mapstructure:"DB_CLIENT_KEY"`
-	MailXMLSecretName            string `mapstructure:"MAIL_XML_SECRET_NAME"`
 	MailAddress                  string `mapstructure:"MAIL_ADDRESS"`
 	MailPassword                 string `mapstructure:"MAIL_PASSWORD"`
 	MailSMTPHost                 string `mapstructure:"MAIL_SMTP_HOST"`
