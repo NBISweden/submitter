@@ -106,7 +106,7 @@ spec:
             - name: data-volume
               mountPath: /data
             {{- if .WithXML }}
-            - name: xml-data-{{ .JobName }}
+            - name: xml-data
               mountPath: /data/xml
             {{- end }}
             - name: tls
@@ -115,10 +115,10 @@ spec:
         - name: data-volume
           emptyDir: {}
         {{- if .WithXML }}
-        - name: xml-data-{{ .JobName }}
+        - name: xml-data
           secret:
             defaultMode: 288
-            secretName: {{ .MailXMLSecretName }}
+            secretName: {{ .JobName }}-xml-secret
         {{- end }}
         - name: tls
           secret:
