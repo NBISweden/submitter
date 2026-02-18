@@ -2,17 +2,12 @@
 # Application Configuration Example. Use this to populate your own config
 # ===============================
 
-# shared configurations
 USER_ID: "user-1234"
 DATASET_ID: "aa-Dataset-abc"
 DATASET_FOLDER: "DATASET_ABC"
-
 JOB_EXPECTED_NR_FILES: 0
-
-CLIENT_API_HOST: "https://api.example.com"
 CLIENT_ACCESS_TOKEN: "youraccesstoken"
 
-# mail specific configurations
 MAIL_ADDRESS: "myemail@example.com"
 MAIL_PASSWORD: "mypasswordemail"
 MAIL_UPLOADER: "jane@example.com"

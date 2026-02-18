@@ -94,7 +94,7 @@ func createTemplateData(cfg *config.Config) (TemplateData, error) {
 		DatasetID:                    cfg.DatasetID,
 		DatasetFolder:                cfg.DatasetFolder,
 		SslCaCert:                    "/.secrets/tls/ca.crt",
-		ClientAPIHost:                cfg.ClientAPIHost,
+		ClientAPIHost:                "https://sda-sda-svc-api:8080",
 		ClientAccessToken:            cfg.ClientAccessToken,
 		MailUploaderName:             cfg.MailUploaderName,
 		MailUploaderOrganizationName: cfg.MailUploaderOrganizationName,

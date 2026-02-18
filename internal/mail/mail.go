@@ -29,13 +29,10 @@ var mailCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		m := New(cfg)
-		for _, recipient := range []string{"BigPicture", "Minttu", "Submitter"} {
-			if err := m.Notify(recipient, dryRun); err != nil {
-				return fmt.Errorf("failed to notify %s: %w", recipient, err)
-			}
+		err = Run(cfg)
+		if err != nil {
+			return err
 		}
-
 		return nil
 	},
 }
@@ -45,6 +42,16 @@ func init() {
 	mailCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will send all emails to the address in configuration.Email (env or yaml conf)")
 	mailCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
 	mailCmd.Flags().StringVarP(&dataDirectory, "data-directory", "d", "data", "Directory to retrieve files from to attach in mail notifications")
+}
+
+func Run(cfg *config.Config) error {
+	m := New(cfg)
+	for _, recipient := range []string{"BigPicture", "Minttu", "Submitter"} {
+		if err := m.Notify(recipient, dryRun); err != nil {
+			return fmt.Errorf("failed to notify %s: %w", recipient, err)
+		}
+	}
+	return nil
 }
 
 type Mail struct {

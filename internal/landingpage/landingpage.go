@@ -28,44 +28,9 @@ var storageCmd = &cobra.Command{
 			return err
 		}
 
-		archiveBucket := cfg.S3ArchiveBucket
-		metadataBucket := cfg.S3MetadataBucket
-		sslCaCert := cfg.SslCaCert
-
-		archiveStorage, err := storage.NewMinio(cfg.S3ArchiveEndpoint, cfg.S3ArchiveAccessKey, cfg.S3ArchiveSecretKey, sslCaCert)
+		err = Run(cfg)
 		if err != nil {
 			return err
-		}
-
-		metadataStorage, err := storage.NewMinio(cfg.S3MetadataEndpoint, cfg.S3MetadataAccessKey, cfg.S3MetadataSecretKey, sslCaCert)
-		if err != nil {
-			return err
-		}
-
-		prefix := fmt.Sprintf("%s/%s", cfg.UserID, cfg.DatasetFolder)
-		slog.Info("listing landing pages", "source_bucket", archiveBucket, "prefix", prefix)
-		objects, err := archiveStorage.ListObjects(archiveBucket, prefix)
-		if err != nil {
-			return err
-		}
-
-		if len(objects) == 0 {
-			slog.Info("No landing pages found")
-		}
-
-		for _, object := range objects {
-			// Ensure object key in metadata S3 is consistend with previous locations, eg datasets/<DATASET_ID>/LANDING_PAGES
-			objectLocation := strings.ReplaceAll(fmt.Sprintf("%s/%s", "datasets", object.Key), fmt.Sprintf("/%s", cfg.DatasetFolder), "")
-			slog.Info("moving laning pages", "destination_bucket", metadataBucket, "object_location", objectLocation)
-			reader, err := archiveStorage.GetObject(archiveBucket, object.Key)
-			if err != nil {
-				return fmt.Errorf("failed to get %s from %s : %v", object.Key, archiveBucket, err)
-			}
-			err = metadataStorage.PutObject(metadataBucket, objectLocation, reader, object.Size)
-			reader.Close()
-			if err != nil {
-				return fmt.Errorf("failed to put %s to %s : %v", object.Key, metadataBucket, err)
-			}
 		}
 		return nil
 	},
@@ -76,4 +41,48 @@ func init() {
 	storageCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
 	storageCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
 	storageCmd.Flags().StringVarP(&dataDirectory, "dataDirectory", "d", "data", "Path to a directory to store itermidate data when needed")
+}
+
+func Run(cfg *config.Config) error {
+	slog.Info("moving landing pages")
+	archiveBucket := cfg.S3ArchiveBucket
+	metadataBucket := cfg.S3MetadataBucket
+	sslCaCert := cfg.SslCaCert
+	archiveStorage, err := storage.NewMinio(cfg.S3ArchiveEndpoint, cfg.S3ArchiveAccessKey, cfg.S3ArchiveSecretKey, sslCaCert)
+	if err != nil {
+		return err
+	}
+
+	metadataStorage, err := storage.NewMinio(cfg.S3MetadataEndpoint, cfg.S3MetadataAccessKey, cfg.S3MetadataSecretKey, sslCaCert)
+	if err != nil {
+		return err
+	}
+
+	prefix := fmt.Sprintf("%s/%s", cfg.UserID, cfg.DatasetFolder)
+	slog.Info("listing landing pages", "source_bucket", archiveBucket, "prefix", prefix)
+	objects, err := archiveStorage.ListObjects(archiveBucket, prefix)
+	if err != nil {
+		return err
+	}
+
+	if len(objects) == 0 {
+		slog.Info("No landing pages found")
+	}
+
+	for _, object := range objects {
+		// Ensure object key in metadata S3 is consistend with previous locations, eg datasets/<DATASET_ID>/LANDING_PAGES
+		objectLocation := strings.ReplaceAll(fmt.Sprintf("%s/%s", "datasets", object.Key), fmt.Sprintf("/%s", cfg.DatasetFolder), "")
+		slog.Info("moving laning pages", "destination_bucket", metadataBucket, "object_location", objectLocation)
+		reader, err := archiveStorage.GetObject(archiveBucket, object.Key)
+		if err != nil {
+			return fmt.Errorf("failed to get %s from %s : %v", object.Key, archiveBucket, err)
+		}
+		err = metadataStorage.PutObject(metadataBucket, objectLocation, reader, object.Size)
+		reader.Close()
+		if err != nil {
+			return fmt.Errorf("failed to put %s to %s : %v", object.Key, metadataBucket, err)
+		}
+	}
+	return nil
+
 }

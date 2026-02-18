@@ -97,6 +97,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("JOB_POLL_RATE", 180)
 	v.SetDefault("JOB_EXPECTED_NR_FILES", 0)
 
+	v.SetDefault("CLIENT_API_HOST", "https://api.bp.nbis.se")
 	v.SetDefault("CERT_SECRET_NAME", "sda-sda-svc-api-certs")
 	v.SetDefault("STORAGE_SECRET_NAME", "sda-bpctl-storage")
 	v.SetDefault("S3_METADATA_ENDPOINT", "storage.sto3.safedc.net")
