@@ -3,6 +3,7 @@ package landingpage
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/NBISweden/sda-bpctl/cmd"
 	"github.com/NBISweden/sda-bpctl/internal/config"
@@ -42,7 +43,7 @@ var storageCmd = &cobra.Command{
 		}
 
 		prefix := fmt.Sprintf("%s/%s", cfg.UserID, cfg.DatasetFolder)
-		slog.Info("listing landing pages", "source", archiveBucket, "prefix", prefix)
+		slog.Info("listing landing pages", "source_bucket", archiveBucket, "prefix", prefix)
 		objects, err := archiveStorage.ListObjects(archiveBucket, prefix)
 		if err != nil {
 			return err
@@ -53,12 +54,14 @@ var storageCmd = &cobra.Command{
 		}
 
 		for _, object := range objects {
-			slog.Info("moving laning pages", "object", object.Key, "destination", metadataBucket)
+			// Ensure object key in metadata S3 is consistend with previous locations, eg datasets/<DATASET_ID>/LANDING_PAGES
+			objectLocation := strings.ReplaceAll(fmt.Sprintf("%s/%s", "datasets", object.Key), fmt.Sprintf("/%s", cfg.DatasetFolder), "")
+			slog.Info("moving laning pages", "destination_bucket", metadataBucket, "object_location", objectLocation)
 			reader, err := archiveStorage.GetObject(archiveBucket, object.Key)
 			if err != nil {
 				return fmt.Errorf("failed to get %s from %s : %v", object.Key, archiveBucket, err)
 			}
-			err = metadataStorage.PutObject(metadataBucket, object.Key, reader, object.Size)
+			err = metadataStorage.PutObject(metadataBucket, objectLocation, reader, object.Size)
 			reader.Close()
 			if err != nil {
 				return fmt.Errorf("failed to put %s to %s : %v", object.Key, metadataBucket, err)
