@@ -50,49 +50,26 @@ spec:
               value: {{ .MailSMTPHost }}
             - name: MAIL_SMTP_PORT
               value: "{{ .MailSMTPPort }}"
-            {{- if .WithDB }}
-            - name: DB_HOST
+            - name: S3_METADATA_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .DbSecretName }}
-                  key: DB_HOST
-            - name: DB_PORT
+                  name: {{ .StorageSecretName }}
+                  key: METADATA_ACCESS_KEY
+            - name: S3_METADATA_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .DbSecretName }}
-                  key: DB_PORT
-            - name: DB_USER
+                  name: {{ .StorageSecretName }}
+                  key: METADATA_SECRET_KEY
+            - name: S3_ARCHIVE_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .DbSecretName }}
-                  key: DB_USER
-            - name: DB_PASSWORD
+                  name: {{ .StorageSecretName }}
+                  key: ARCHIVE_ACCESS_KEY
+            - name: S3_ARCHIVE_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .DbSecretName }}
-                  key: DB_PASSWORD
-            - name: DB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .DbSecretName }}
-                  key: DB_NAME
-            - name: DB_SCHEMA
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .DbSecretName }}
-                  key: DB_SCHEMA
-            - name: DB_SSL_MODE
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .DbSecretName }}
-                  key: DB_SSL_MODE
-            - name: DB_CA_CERT
-              value: "/.secrets/tls/ca.crt"
-            - name: DB_CLIENT_CERT
-              value: "/.secrets/tls/tls.crt"
-            - name: DB_CLIENT_KEY
-              value: "/.secrets/tls/tls.key"
-          {{- end }}
+                  name: {{ .StorageSecretName }}
+                  key: ARCHIVE_SECRET_KEY
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true

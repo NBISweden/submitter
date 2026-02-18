@@ -33,7 +33,7 @@ var retryableStatusCodes = map[int]bool{
 	http.StatusGatewayTimeout:      true,
 	http.StatusInternalServerError: true,
 	http.StatusServiceUnavailable:  true,
-	// as of (2026-01-21) we believe there can be erroneous responses from the API of 400 bad request that we wish to retry on
+	// as of (2026-01-21) there is reason to beleve that the API can return erroneous responses of `400 bad request` that we wish to retry on
 	http.StatusBadRequest: true,
 }
 

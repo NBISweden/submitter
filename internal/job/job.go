@@ -20,9 +20,8 @@ var expectedFiles int
 
 var jobCmd = &cobra.Command{
 	Use:   "job <expectedFiles>",
-	Short: "Runs all dataset submission steps as a 'job'",
-	Long: `Runs all dataset submission steps as a 'job' (ingestion, accession, dataset) takes a integer value representing the expected number of files to be included in the finalized dataset as argument
-	`,
+	Short: "Runs all dataset submission steps in order",
+	Long:  `Runs all dataset submission steps in order (ingestion -> accession -> dataset) takes a integer value representing the expected number of files to be included in the finalized dataset as argument. When a dataset is completed it ends with sending mail notifications and moving landing pages`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		var err error
 		if len(args) == 0 {
