@@ -4,17 +4,17 @@ A tool that can be used to deal with administrative workflows for the big pictur
 
 It can be used either locally as a cli tool or be packaged and run as a job in kubernetes. This is on one hand powerful and on the other hand, sometimes confusing and unintuitive, in an attempt to clarify the difference in logic based on how the tool is used the terms used will be **job** and **cli** in **bold** when describing the different logics.
 
-The core logic of this tool is wrapping logic around the sensitive data archive (SDA) api. To fully understand how this is expected to work you should be familiar with the sda and its api.
+The core functionallity of this tool is wrapping logic around the sensitive data archive (SDA) api, usually just referenced as 'the API' in this project. To fully understand how this is expected to work you should be familiar with the SDA and its api.
 
 ### installation
 
-Build from source using `go`:
+Build from source:
 
 ```bash
 git clone git@github.com:NBISweden/sda-bpctl.git
 cd sda-bpctl
 go build -o bpctl .
-bpctl -h
+./bpctl -h
 ```
 
 ### usage
@@ -88,10 +88,13 @@ see the `config.yaml.example` for a base template with what fields to fill
 | MAIL_UPLOADER_NAME | "Jane Doe" | Name of the uploader | `mail` |
 | MAIL_SMTP_HOST | "smtp.example.com" | Hostname to a mail server to relay mails through | `mail` |
 | MAIL_SMTP_PORT | 587 | Port for the mail server | `mail` |
-| DB_SECRET_NAME | "db-secret" | The name of the kubernetes secret that holds connection details for the sda database | `job` ,`render` |
 | CERT_SECRET_NAME | "cert-secret" | The name of the kubernetes secret that holds a tls certificate to use | `job`, `render` |
 
 ### ingest
+
+```bash
+./bpctl ingest [flags]
+```
 
 The ingest command will lookup all the files for the `USER_ID` that resides in `DATASET_FOLDER`, filter out all files that are not in either a directory `LANDING_PAGE` or `PRIVATE` and any file that does not have the event `uploaded`. 
 
@@ -103,6 +106,10 @@ Files sent to ingestion are done so trough the sda api `POST /ingest` endpoint.
 
 ### accession
 
+```bash
+./bpctl accession [flags]
+```
+
 The accession command will get a list of files for the `USER_ID` that resides in `DATASET_FOLDER` and have the event `verified`.
 
 **job:** will poll the api according to `JOB_POLL_RATE` and wait until it finds the amount of files that matches `JOB_EXPECTED_NR_FILES` or until it times out according to `JOB_TIMEOUT`. When the expected number of files are found it will send a request to the sda api `POST /accession` endpoint with the files.
@@ -111,11 +118,41 @@ The accession command will get a list of files for the `USER_ID` that resides in
 
 ### dataset
 
+```bash
+./bpctl dataset [flags]
+```
+
 The dataset command will retrieve a list of accessionIDs and send a request to the sda api `POST /dataset`
 
 **job:** will consume the list of accessionIDs by a in memory variable produced by the previous step in `accession` and send a list of files to be mapped to a dataset to `POST /dataset/create`
 
 **cli:** will try to read from `<DATASET_FOLDER>-fileIDs.txt` to identify the files to be included in a dataset. If the file cannot be found it will make a call to `GET /user/files?path_prefix=<DATASET_FOLDER>` to find them and send a request to `POST /dataset/create` with the files.
+
+### mail
+
+```bash
+./bpctl mail [flags]
+```
+
+Will send email notifications about dataset finalization to needed parties with information and attachments specifically for each.
+
+`bigpicture submission`: recieves a mail about dataset creation and attachments with `dataset.xml` and `policy.xml`
+
+`bigpicture PO`: recieves a mail about dataset creation and attachments with `rems.txt`, `dataset.txt` and `policy.xml`
+
+`uploader`: recieves a mail confirming the creation of the dataset is completed with attachments `<datasetFolder>-stableIDs.txt`
+
+**job:** will store `<datasetFolder>-stableIDs.txt` in memory during creation and relay it as attachments. Will consume the others from `data-directory/xml`
+
+**cli:** will search for `<datasetFolder>-stableIDs.txt` in `data-directory/` and xml files in `data-directory/xml`
+
+### job
+
+```bash
+./bpctl job <expectedFiles> [flags]
+```
+
+Will run all the above steps in order of ingest -> accession -> dataset and ensure the expectedFiles are keept between each stage where expectedFiles represents a integer value of the ammount of files that is expected to be present in the finalized dataset. If a dataset completes without error the job command will finish with sending out email notifications and move eventual landing pages from the inbox bucket to the public metadata bucket.
 
 ### testing
 

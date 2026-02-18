@@ -20,7 +20,6 @@ import (
 var templateFS embed.FS
 var configPath string
 var output string
-var withDB bool
 var withXML bool
 
 type TemplateData struct {
@@ -42,11 +41,8 @@ type TemplateData struct {
 	MailPassword                 string
 	MailSMTPHost                 string
 	MailSMTPPort                 string
-	DbSecretName                 string
-	DbCaCert                     string
-	DbClientCert                 string
-	DbClientKey                  string
 	CertSecretName               string
+	StorageSecretName            string
 }
 
 var renderCmd = &cobra.Command{
@@ -85,13 +81,11 @@ func init() {
 	cmd.AddCommand(renderCmd)
 	renderCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
 	renderCmd.Flags().StringVarP(&output, "output", "o", "job.yaml", "Path to write the rendered file to")
-	renderCmd.Flags().BoolVarP(&withDB, "database", "d", false, "Render manifest with database values included")
 	renderCmd.Flags().BoolVarP(&withXML, "xml", "x", false, "Render manifest with xml volumes included")
 }
 
 func createTemplateData(cfg *config.Config) (TemplateData, error) {
 	templateData := &TemplateData{
-		WithDB:                       withDB,
 		WithXML:                      withXML,
 		JobName:                      strings.ToLower(strings.ReplaceAll(cfg.DatasetFolder, "_", "-")),
 		JobReleaseLabel:              "sda",
@@ -110,7 +104,7 @@ func createTemplateData(cfg *config.Config) (TemplateData, error) {
 		MailSMTPHost:                 cfg.MailSMTPHost,
 		MailSMTPPort:                 strconv.Itoa(cfg.MailSMTPPort),
 		CertSecretName:               cfg.CertSecretName,
-		DbSecretName:                 cfg.DbSecretName,
+		StorageSecretName:            cfg.StorageSecretName,
 	}
 	return *templateData, nil
 }

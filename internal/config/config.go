@@ -18,16 +18,7 @@ type Config struct {
 	ClientAPIHost                string `mapstructure:"CLIENT_API_HOST"`
 	ClientAccessToken            string `mapstructure:"CLIENT_ACCESS_TOKEN"`
 	CertSecretName               string `mapstructure:"CERT_SECRET_NAME"`
-	DbSecretName                 string `mapstructure:"DB_SECRET_NAME"`
-	DbHost                       string `mapstructure:"DB_HOST"`
-	DbPort                       int    `mapstructure:"DB_PORT"`
-	DbUser                       string `mapstructure:"DB_USER"`
-	DbPassword                   string `mapstructure:"DB_PASSWORD"`
-	DbName                       string `mapstructure:"DB_NAME"`
-	DbSchema                     string `mapstructure:"DB_SCHEMA"`
-	DbSslMode                    string `mapstructure:"DB_SSL_MODE"`
-	DbClientCert                 string `mapstructure:"DB_CLIENT_CERT"`
-	DbClientKey                  string `mapstructure:"DB_CLIENT_KEY"`
+	StorageSecretName            string `mapstructure:"STORAGE_SECRET_NAME"`
 	MailAddress                  string `mapstructure:"MAIL_ADDRESS"`
 	MailPassword                 string `mapstructure:"MAIL_PASSWORD"`
 	MailSMTPHost                 string `mapstructure:"MAIL_SMTP_HOST"`
@@ -35,6 +26,14 @@ type Config struct {
 	MailUploaderName             string `mapstructure:"MAIL_UPLOADER_NAME"`
 	MailUploaderOrganizationName string `mapstructure:"MAIL_UPLOADER_ORGANIZATION_NAME"`
 	MailUploader                 string `mapstructure:"MAIL_UPLOADER"`
+	S3ArchiveEndpoint            string `mapstructure:"S3_ARCHIVE_ENDPOINT"`
+	S3ArchiveBucket              string `mapstructure:"S3_ARCHIVE_BUCKET"`
+	S3ArchiveAccessKey           string `mapstructure:"S3_ARCHIVE_ACCESS_KEY"`
+	S3ArchiveSecretKey           string `mapstructure:"S3_ARCHIVE_SECRET_KEY"`
+	S3MetadataEndpoint           string `mapstructure:"S3_METADATA_ENDPOINT"`
+	S3MetadataBucket             string `mapstructure:"S3_METADATA_BUCKET"`
+	S3MetadataAccessKey          string `mapstructure:"S3_METADATA_ACCESS_KEY"`
+	S3MetadataSecretKey          string `mapstructure:"S3_METADATA_SECRET_KEY"`
 }
 
 func NewConfig(configPath string) (*Config, error) {
@@ -42,10 +41,7 @@ func NewConfig(configPath string) (*Config, error) {
 
 	v.SetConfigFile(configPath)
 	bindKeys(v)
-
-	v.SetDefault("JOB_TIMEOUT", 4320)
-	v.SetDefault("JOB_POLL_RATE", 180)
-	v.SetDefault("JOB_EXPECTED_NR_FILES", 0)
+	setDefaults(v)
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -77,16 +73,6 @@ func bindKeys(v *viper.Viper) {
 	v.BindEnv("JOB_EXPECTED_NR_FILES")
 	v.BindEnv("CLIENT_API_HOST")
 	v.BindEnv("CLIENT_ACCESS_TOKEN")
-	v.BindEnv("DB_HOST")
-	v.BindEnv("DB_PORT")
-	v.BindEnv("DB_USER")
-	v.BindEnv("DB_PASSWORD")
-	v.BindEnv("DB_NAME")
-	v.BindEnv("DB_SCHEMA")
-	v.BindEnv("DB_SSL_MODE")
-	v.BindEnv("DB_CLIENT_CERT")
-	v.BindEnv("DB_CLIENT_KEY")
-	v.BindEnv("MAIL_XML_SECRET_NAME")
 	v.BindEnv("MAIL_ADDRESS")
 	v.BindEnv("MAIL_PASSWORD")
 	v.BindEnv("MAIL_SMTP_HOST")
@@ -94,6 +80,31 @@ func bindKeys(v *viper.Viper) {
 	v.BindEnv("MAIL_UPLOADER_NAME")
 	v.BindEnv("MAIL_UPLOADER_ORGANIZATION_NAME")
 	v.BindEnv("MAIL_UPLOADER")
+	v.BindEnv("CERT_SECRET_NAME")
+	v.BindEnv("STORAGE_SECRET_NAME")
+	v.BindEnv("S3_ARCHIVE_ENDPOINT")
+	v.BindEnv("S3_ARCHIVE_BUCKET")
+	v.BindEnv("S3_ARCHIVE_ACCESS_KEY")
+	v.BindEnv("S3_ARCHIVE_SECRET_KEY")
+	v.BindEnv("S3_METADATA_ENDPOINT")
+	v.BindEnv("S3_METADATA_BUCKET")
+	v.BindEnv("S3_METADATA_ACCESS_KEY")
+	v.BindEnv("S3_METADATA_SECRET_KEY")
+}
+
+func setDefaults(v *viper.Viper) {
+	v.SetDefault("JOB_TIMEOUT", 4320)
+	v.SetDefault("JOB_POLL_RATE", 180)
+	v.SetDefault("JOB_EXPECTED_NR_FILES", 0)
+
+	v.SetDefault("CERT_SECRET_NAME", "sda-sda-svc-api-certs")
+	v.SetDefault("STORAGE_SECRET_NAME", "sda-bpctl-storage")
+	v.SetDefault("S3_METADATA_ENDPOINT", "storage.sto3.safedc.net")
+	v.SetDefault("S3_METADATA_BUCKET", "public-metadata")
+	v.SetDefault("S3_ARCHIVE_ENDPOINT", "s3a4.sto2.safedc.net")
+	v.SetDefault("S3_ARCHIVE_BUCKET", "inbox-2024-01")
+	v.SetDefault("MAIL_SMTP_HOST", "mail.nbis.se")
+	v.SetDefault("MAIL_SMTP_PORT", 587)
 }
 
 func validateConfig(cfg *Config) error {

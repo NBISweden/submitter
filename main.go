@@ -10,6 +10,7 @@ import (
 	_ "github.com/NBISweden/sda-bpctl/internal/dataset"
 	_ "github.com/NBISweden/sda-bpctl/internal/ingest"
 	_ "github.com/NBISweden/sda-bpctl/internal/job"
+	_ "github.com/NBISweden/sda-bpctl/internal/landingpage"
 	_ "github.com/NBISweden/sda-bpctl/internal/mail"
 )
 
