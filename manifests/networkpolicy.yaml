@@ -30,7 +30,7 @@ spec:
       protocol: TCP
     to:
     - ipBlock:
-        cidr: 193.11.91.18/32
+        cidr: 37.156.195.53/32
     - podSelector:
         matchLabels:
           bigpicture: bpctl
