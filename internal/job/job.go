@@ -12,6 +12,8 @@ import (
 	"github.com/NBISweden/sda-bpctl/internal/config"
 	"github.com/NBISweden/sda-bpctl/internal/dataset"
 	"github.com/NBISweden/sda-bpctl/internal/ingest"
+	"github.com/NBISweden/sda-bpctl/internal/landingpage"
+	"github.com/NBISweden/sda-bpctl/internal/mail"
 	"github.com/spf13/cobra"
 )
 
@@ -102,6 +104,16 @@ func runJob(expectedFiles int) error {
 	time.Sleep(waitTime)
 
 	err = dataset.Run(api, datasetFolder, datasetID, userID, accessionIDs)
+	if err != nil {
+		return err
+	}
+
+	err = landingpage.Run(cfg)
+	if err != nil {
+		return err
+	}
+
+	err = mail.Run(cfg)
 	if err != nil {
 		return err
 	}
