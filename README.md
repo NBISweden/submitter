@@ -71,7 +71,7 @@ will render a job.yaml manifest for you based on the configuration values you ha
 
 bpctl can consume configuration from either `config.yaml` or from environment variables. If both are supplied then the environment variables will take priority. If using config.yaml it is expected to be located in the root directory of the project. It can also be supplied by using the `--config` flag if located elsewhere.
 
-see the `config.yaml.example` for a base template with what fields to fill
+see the `config.yaml.example` for a base template with what fields to fill. The example shows a minimal config. The table below shows all possible values that can be configured:
 | Name | Example | Description | used by |
 | --------------- | --------------- | --------------- | --------------- |
 | USER_ID | "user-1234" | The user ID for the uploader, acts as identifier for the uploaded data | `ingest`, `accession`, `dataset`, `job`, `render` |
@@ -142,7 +142,7 @@ Will send email notifications about dataset finalization to needed parties with 
 
 `uploader`: recieves a mail confirming the creation of the dataset is completed with attachments `<datasetFolder>-stableIDs.txt`
 
-**job:** will store `<datasetFolder>-stableIDs.txt` in memory during creation and relay it as attachments. Will consume the others from `data-directory/xml`
+**job:** will store `<datasetFolder>-stableIDs.txt` in memory during creation and relay it as attachments. The xml attachments will be read from `/data/xml` and will expect a kubernetes `secret` to mount the data from. The user is responsible for ensuring this secret exists and have the correct contents.
 
 **cli:** will search for `<datasetFolder>-stableIDs.txt` in `data-directory/` and xml files in `data-directory/xml`
 
