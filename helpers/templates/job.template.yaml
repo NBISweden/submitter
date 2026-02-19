@@ -81,10 +81,10 @@ spec:
               type: RuntimeDefault
           volumeMounts:
             - name: data-volume
-              mountPath: /data
+              mountPath: {{ .DataDirectory }}
             {{- if .WithXML }}
             - name: xml-data
-              mountPath: /data/xml
+              mountPath: {{ .DataDirectory }}/xml
             {{- end }}
             - name: tls
               mountPath: /.secrets/tls/

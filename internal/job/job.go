@@ -113,6 +113,8 @@ func runJob(expectedFiles int) error {
 		return err
 	}
 
+	// TODO: Find a better way to deal with this data directory (zeidlitz)
+	mail.DataDirectory = "/data"
 	err = mail.Run(cfg)
 	if err != nil {
 		return err

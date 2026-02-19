@@ -43,6 +43,7 @@ type TemplateData struct {
 	MailSMTPPort                 string
 	CertSecretName               string
 	StorageSecretName            string
+	DataDirectory                string
 }
 
 var renderCmd = &cobra.Command{
@@ -105,6 +106,7 @@ func createTemplateData(cfg *config.Config) (TemplateData, error) {
 		MailSMTPPort:                 strconv.Itoa(cfg.MailSMTPPort),
 		CertSecretName:               cfg.CertSecretName,
 		StorageSecretName:            cfg.StorageSecretName,
+		DataDirectory:                "/data",
 	}
 	return *templateData, nil
 }

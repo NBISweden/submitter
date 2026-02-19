@@ -18,7 +18,7 @@ import (
 var templateFS embed.FS
 var dryRun bool
 var configPath string
-var dataDirectory string
+var DataDirectory string
 
 var mailCmd = &cobra.Command{
 	Use:   "mail",
@@ -41,7 +41,7 @@ func init() {
 	cmd.AddCommand(mailCmd)
 	mailCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will send all emails to the address in configuration.Email (env or yaml conf)")
 	mailCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
-	mailCmd.Flags().StringVarP(&dataDirectory, "data-directory", "d", "data", "Directory to retrieve files from to attach in mail notifications")
+	mailCmd.Flags().StringVarP(&DataDirectory, "data-directory", "d", "data", "Directory to retrieve files from to attach in mail notifications")
 }
 
 func Run(cfg *config.Config) error {
@@ -97,20 +97,20 @@ func New(c *config.Config) *Mail {
 				email:       c.MailUploader,
 				template:    "notify-submitter.html",
 				subject:     "Successful Ingestion of Your Dataset Submission",
-				attachments: []string{fmt.Sprintf("%s/%s-stableIDs.txt", dataDirectory, c.DatasetFolder)},
+				attachments: []string{fmt.Sprintf("%s/%s-stableIDs.txt", DataDirectory, c.DatasetFolder)},
 			},
 			"BigPicture": {
 				email:       "submit@bigpicture.eu",
 				template:    "notify-bigpicture.html",
 				subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetID),
-				attachments: []string{fmt.Sprintf("%s/xml/dataset.txt", dataDirectory), fmt.Sprintf("%s/xml/policy.txt", dataDirectory)},
+				attachments: []string{fmt.Sprintf("%s/xml/dataset.txt", DataDirectory), fmt.Sprintf("%s/xml/policy.txt", DataDirectory)},
 			},
 			"Minttu": {
 				email:       "minttu.sauramo@hus.fi",
 				cc:          []string{"jarno.laitinen@csc.fi"},
 				template:    "notify-minttu.html",
 				subject:     fmt.Sprintf("Dataset %s has been ingested", c.DatasetID),
-				attachments: []string{fmt.Sprintf("%s/xml/dataset.txt", dataDirectory), fmt.Sprintf("%s/xml/rems.txt", dataDirectory), fmt.Sprintf("%s/xml/policy.txt", dataDirectory)},
+				attachments: []string{fmt.Sprintf("%s/xml/dataset.txt", DataDirectory), fmt.Sprintf("%s/xml/rems.txt", DataDirectory), fmt.Sprintf("%s/xml/policy.txt", DataDirectory)},
 			},
 		},
 	}
