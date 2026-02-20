@@ -19,7 +19,7 @@ import (
 
 var dryRun bool
 var configPath string
-var dataDirectory string
+var DataDirectory string
 var datasetFolder string
 
 var accessionCmd = &cobra.Command{
@@ -43,7 +43,7 @@ var accessionCmd = &cobra.Command{
 			return err
 		}
 
-		filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
+		filePath := helpers.GetFileIDsPath(DataDirectory, datasetFolder)
 		file, err := createFileIDFile(filePath, dryRun)
 		if err != nil {
 			slog.Error("error occurred when trying to create file", "filePath", filePath)
@@ -81,7 +81,7 @@ func init() {
 	cmd.AddCommand(accessionCmd)
 	accessionCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
 	accessionCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
-	accessionCmd.Flags().StringVarP(&dataDirectory, "data-directory", "d", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
+	accessionCmd.Flags().StringVarP(&DataDirectory, "data-directory", "d", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
 }
 
 func Run(api client.APIClient, datasetFolder string, userID string) ([]string, error) {
