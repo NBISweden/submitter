@@ -20,7 +20,7 @@ import (
 
 var dryRun bool
 var configPath string
-var dataDirectory string
+var DataDirectory string
 
 var datasetCmd = &cobra.Command{
 	Use:   "dataset [flags]",
@@ -81,7 +81,7 @@ func init() {
 	cmd.AddCommand(datasetCmd)
 	datasetCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Toggles dry-run mode. Dry run will not run any state changing API calls")
 	datasetCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
-	datasetCmd.Flags().StringVarP(&dataDirectory, "data-directory", "d", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
+	datasetCmd.Flags().StringVarP(&DataDirectory, "data-directory", "d", "data", "Path to directory to write / read intermediate files for stableIDs and fileIDs")
 }
 
 type Payload struct {
@@ -105,7 +105,7 @@ func Run(api *client.Client, datasetFolder string, datasetID string, userID stri
 
 func getFileIDs(datasetFolder string, api client.APIClient) ([]string, error) {
 	var fileIDsList []string
-	filePath := helpers.GetFileIDsPath(dataDirectory, datasetFolder)
+	filePath := helpers.GetFileIDsPath(DataDirectory, datasetFolder)
 	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
 		files, err := api.GetUsersFilesWithPrefix()
 		if err != nil {
@@ -190,7 +190,7 @@ func sendInChunks(fileIDsList []string, api client.APIClient, datasetID string, 
 }
 
 func createStableIDsFile(datasetFolder string, files []models.FileInfo) error {
-	filePath := helpers.GetStableIDsPath(dataDirectory, datasetFolder)
+	gfilePath := helpers.GetStableIDsPath(DataDirectory, datasetFolder)
 	if _, err := os.Stat(filePath); err == nil {
 		return err
 	} else if !os.IsNotExist(err) {

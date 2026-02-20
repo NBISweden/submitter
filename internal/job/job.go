@@ -20,6 +20,9 @@ import (
 var configPath string
 var expectedFiles int
 
+// TODO: Figure out a better way to point out this data directory so I'ts connected to the rendered template
+var dataDirectory = "/data"
+
 var jobCmd = &cobra.Command{
 	Use:   "job <expectedFiles>",
 	Short: "Runs all dataset submission steps in order",
@@ -88,6 +91,7 @@ func runJob(expectedFiles int) error {
 		return err
 	}
 
+	accession.DataDirectory = dataDirectory
 	accessionIDs, err := accession.Run(api, datasetFolder, userID)
 	if err != nil {
 		return err
@@ -98,11 +102,11 @@ func runJob(expectedFiles int) error {
 		return fmt.Errorf("accession did not return the expected number of files, got %d expected %d", nrAccessionIDs, expectedFiles)
 	}
 
-	// We give some time for the SDA backend to process our accession ids. During test-runs it's been fine with 10 minutes
 	waitTime := 10 * time.Minute
 	slog.Info("waiting before sending dataset creation request", "delay", waitTime)
 	time.Sleep(waitTime)
 
+	dataset.DataDirectory = dataDirectory
 	err = dataset.Run(api, datasetFolder, datasetID, userID, accessionIDs)
 	if err != nil {
 		return err
@@ -110,14 +114,13 @@ func runJob(expectedFiles int) error {
 
 	err = landingpage.Run(cfg)
 	if err != nil {
-		return err
+		slog.Warn("could not complete landingpage", "err", err)
 	}
 
-	// TODO: Find a better way to deal with this data directory (zeidlitz)
-	mail.DataDirectory = "/data"
+	mail.DataDirectory = dataDirectory
 	err = mail.Run(cfg)
 	if err != nil {
-		return err
+		slog.Warn("could not complete mail notifications", "err", err)
 	}
 
 	slog.Info("dataset submission completed!")
