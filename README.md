@@ -146,6 +146,14 @@ Will send email notifications about dataset finalization to needed parties with 
 
 **cli:** will search for `<datasetFolder>-stableIDs.txt` in `data-directory/` and xml files in `data-directory/xml`
 
+### render
+
+```bash
+./bpctl render [flags]
+```
+
+Will render a 'opinionated' kubernetes yaml manifest that defines a `job` resrouce. Fields specific for a given dataset is populated from `config.yaml` while other big picture specific deployment fields such as `CLIENT_API_HOST`, `CERT_SECRET_NAME` and similar are hard coded. This is not a generic template that is meant to fit multiple purposes, It's specifically made to fit the big picture kubernetes deployment in NBIS.
+
 ### job
 
 ```bash
