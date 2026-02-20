@@ -190,7 +190,7 @@ func sendInChunks(fileIDsList []string, api client.APIClient, datasetID string, 
 }
 
 func createStableIDsFile(datasetFolder string, files []models.FileInfo) error {
-	gfilePath := helpers.GetStableIDsPath(DataDirectory, datasetFolder)
+	filePath := helpers.GetStableIDsPath(DataDirectory, datasetFolder)
 	if _, err := os.Stat(filePath); err == nil {
 		return err
 	} else if !os.IsNotExist(err) {
