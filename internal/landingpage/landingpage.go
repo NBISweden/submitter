@@ -44,7 +44,6 @@ func init() {
 }
 
 func Run(cfg *config.Config) error {
-	slog.Info("moving landing pages")
 	archiveBucket := cfg.S3ArchiveBucket
 	metadataBucket := cfg.S3MetadataBucket
 	sslCaCert := cfg.SslCaCert
@@ -70,9 +69,8 @@ func Run(cfg *config.Config) error {
 	}
 
 	for _, object := range objects {
-		// Ensure object key in metadata S3 is consistend with previous locations, eg datasets/<DATASET_ID>/LANDING_PAGES
 		objectLocation := strings.ReplaceAll(fmt.Sprintf("%s/%s", "datasets", object.Key), fmt.Sprintf("/%s", cfg.DatasetFolder), "")
-		slog.Info("moving laning pages", "destination_bucket", metadataBucket, "object_location", objectLocation)
+		slog.Info("uploading", "destination_bucket", metadataBucket, "object_location", objectLocation)
 		reader, err := archiveStorage.GetObject(archiveBucket, object.Key)
 		if err != nil {
 			return fmt.Errorf("failed to get %s from %s : %v", object.Key, archiveBucket, err)

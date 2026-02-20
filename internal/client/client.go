@@ -193,7 +193,7 @@ func (c *Client) WaitForAccession(target int, interval time.Duration, timeout ti
 		if time.Now().After(deadline) {
 			return nil, fmt.Errorf("timeout reached, only got %d/%d files", len(paths), target)
 		}
-		slog.Info(fmt.Sprintf("found %d/%d files - waiting: internal: %s timeout: %s", len(paths), target, interval, timeout))
+		slog.Info(fmt.Sprintf("found %d/%d files - waiting: %s timeout: %s", len(paths), target, interval, timeout))
 		time.Sleep(interval)
 	}
 }
