@@ -96,7 +96,19 @@ type UserFiles struct {
 }
 
 func Run(api *client.Client, datasetFolder string, datasetID string, userID string, fileIDsList []string) error {
-	err := createDataset(api, datasetID, userID, fileIDsList)
+
+	// TODO: Optimize this; another query to GetUsersFilesWithPrefix is redundant since It will hold the same information as in the fileIDsList []string
+	files, err := api.GetUsersFilesWithPrefix()
+	if err != nil {
+		return err
+	}
+
+	err = createStableIDsFile(datasetFolder, files)
+	if err != nil {
+		return err
+	}
+
+	err = createDataset(api, datasetID, userID, fileIDsList)
 	if err != nil {
 		return err
 	}
