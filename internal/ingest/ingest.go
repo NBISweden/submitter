@@ -51,16 +51,12 @@ func init() {
 	ingestCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
 }
 
-func Run(api client.APIClient, datasetFolder string, userID string, expectedFiles int) (int, error) {
+func Run(api client.APIClient, datasetFolder string, userID string) (int, error) {
 	files, err := api.GetUsersFilesWithPrefix()
 	if err != nil {
 		return 0, err
 	}
 
-	filteredFiles := filterFiles(files, datasetFolder)
-	if expectedFiles != len(filteredFiles) {
-		return 0, fmt.Errorf("expected nr of files does not match files from db, got %d expected %d", len(files), expectedFiles)
-	}
 	return ingestFiles(api, datasetFolder, userID, files)
 }
 

@@ -14,7 +14,7 @@ type Config struct {
 	SslCaCert                    string `mapstructure:"SSL_CA_CERT"`
 	Timeout                      int    `mapstructure:"JOB_TIMEOUT"`
 	PollRate                     int    `mapstructure:"JOB_POLL_RATE"`
-	ExpectedNrFiles              int    `mapstructure:"JOB_EXPECTED_NR_FILES"`
+	JobDataDirectory             string `mapstructure:"JOB_DATA_DIRECTORY"`
 	ClientAPIHost                string `mapstructure:"CLIENT_API_HOST"`
 	ClientAccessToken            string `mapstructure:"CLIENT_ACCESS_TOKEN"`
 	CertSecretName               string `mapstructure:"CERT_SECRET_NAME"`
@@ -70,7 +70,7 @@ func bindKeys(v *viper.Viper) {
 	v.BindEnv("SSL_CA_CERT")
 	v.BindEnv("JOB_TIMEOUT")
 	v.BindEnv("JOB_POLL_RATE")
-	v.BindEnv("JOB_EXPECTED_NR_FILES")
+	v.BindEnv("JOB_DATA_DIRECTORY")
 	v.BindEnv("CLIENT_API_HOST")
 	v.BindEnv("CLIENT_ACCESS_TOKEN")
 	v.BindEnv("MAIL_ADDRESS")
@@ -96,6 +96,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("JOB_TIMEOUT", 4320)
 	v.SetDefault("JOB_POLL_RATE", 180)
 	v.SetDefault("JOB_EXPECTED_NR_FILES", 0)
+	v.SetDefault("JOB_DATA_DIRECTORY", "/data")
 
 	v.SetDefault("CLIENT_API_HOST", "https://api.bp.nbis.se")
 	v.SetDefault("CERT_SECRET_NAME", "sda-sda-svc-api-certs")

@@ -3,7 +3,6 @@ package job
 import (
 	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"github.com/NBISweden/sda-bpctl/cmd"
@@ -18,34 +17,14 @@ import (
 )
 
 var configPath string
-var expectedFiles int
-
-// TODO: Figure out a better way to point out this data directory so I'ts connected to the rendered template
-var dataDirectory = "/data"
 
 var jobCmd = &cobra.Command{
 	Use:   "job <expectedFiles>",
 	Short: "Runs all dataset submission steps in order",
 	Long:  `Runs all dataset submission steps in order (ingestion -> accession -> dataset) takes a integer value representing the expected number of files to be included in the finalized dataset as argument. When a dataset is completed it ends with sending mail notifications and moving landing pages`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		var err error
-		if len(args) == 0 {
-			return fmt.Errorf("job must be supplied a number of expected files as argument")
-		}
-
-		if len(args) > 1 {
-			return fmt.Errorf("job can only handle one argument")
-		}
-
-		expectedFiles, err = strconv.Atoi(args[0])
-		if err != nil {
-			return fmt.Errorf("could not interpert expected number of files %w", err)
-		}
-		return nil
-	},
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := runJob(expectedFiles)
+		err := runJob()
 		if err != nil {
 			return err
 		}
@@ -58,7 +37,7 @@ func init() {
 	jobCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to configuration file")
 }
 
-func runJob(expectedFiles int) error {
+func runJob() error {
 	cfg, err := config.NewConfig(configPath)
 	if err != nil {
 		return err
@@ -69,21 +48,18 @@ func runJob(expectedFiles int) error {
 	datasetFolder := cfg.DatasetFolder
 	datasetID := cfg.DatasetID
 	userID := cfg.UserID
+	dataDirectory := cfg.JobDataDirectory
 
-	slog.Info("dispatching job", "dataset_folder", datasetFolder, "dataset_id", datasetID, "userID", userID, "expected_files", expectedFiles)
+	slog.Info("dispatching job", "dataset_folder", datasetFolder, "dataset_id", datasetID, "userID", userID)
 
 	api, err := client.New(cfg)
 	if err != nil {
 		return err
 	}
 
-	filesCount, err := ingest.Run(api, datasetFolder, userID, expectedFiles)
+	filesCount, err := ingest.Run(api, datasetFolder, userID)
 	if err != nil {
 		return err
-	}
-
-	if filesCount != expectedFiles {
-		return fmt.Errorf("ingest did not return the expected number of files, got %d expected %d", filesCount, expectedFiles)
 	}
 
 	_, err = api.WaitForAccession(filesCount, pollRate, timeout)
@@ -98,8 +74,8 @@ func runJob(expectedFiles int) error {
 	}
 
 	nrAccessionIDs := len(accessionIDs)
-	if nrAccessionIDs != expectedFiles {
-		return fmt.Errorf("accession did not return the expected number of files, got %d expected %d", nrAccessionIDs, expectedFiles)
+	if nrAccessionIDs != filesCount {
+		return fmt.Errorf("accession did not return the expected number of files, got %d expected %d", nrAccessionIDs, filesCount)
 	}
 
 	waitTime := 10 * time.Minute
