@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/NBISweden/sda-bpctl/internal/models"
 )
@@ -51,6 +52,14 @@ func (m *mockClient) PostDatasetCreate(payload []byte) ([]byte, error) {
 	return response, nil
 }
 
+func (m *mockClient) GetFilesWithStatus(status string) ([]models.FileInfo, error) {
+	return m.UserFilesWithPrefix, nil
+}
+
+func (m *mockClient) WaitForStatus(target int, status string, interval time.Duration, timeout time.Duration) ([]models.FileInfo, error) {
+	return nil, nil
+}
+
 func newMockClient(userID string, datasetFolder string) *mockClient {
 	// data is mocked so that we expect 2 files to be included in the dataset
 	mock := &mockClient{
@@ -89,24 +98,23 @@ func TestDataset(t *testing.T) {
 			t.Error(err)
 		}
 
-		// Need some way to clean up the file that is created from this? Maybe rework the function a bit ...
 		err = createStableIDsFile(datasetFolder, files)
 		if err != nil {
 			t.Error(err)
 		}
 
-		fileIDsList, err := getFileIDs(datasetFolder, mock)
+		files, err = mock.GetFilesWithStatus("verified")
 		if err != nil {
 			t.Error(err)
 		}
 
-		nrFiles := len(fileIDsList)
+		nrFiles := len(files)
 		if nrFiles != expectedNrFiles {
 			t.Logf("recieved %d/%d paths for accessionIDs", nrFiles, expectedNrFiles)
 			t.Fail()
 		}
 
-		err = createDataset(mock, datasetID, userID, fileIDsList)
+		err = createDataset(mock, datasetID, userID, files)
 		if err != nil {
 			t.Error(err)
 		}

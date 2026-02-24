@@ -12,7 +12,6 @@ import (
 
 	"github.com/NBISweden/sda-bpctl/cmd"
 	"github.com/NBISweden/sda-bpctl/internal/config"
-	"github.com/NBISweden/sda-bpctl/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -90,7 +89,7 @@ func createTemplateData(cfg *config.Config) (TemplateData, error) {
 		WithXML:                      withXML,
 		JobName:                      strings.ToLower(strings.ReplaceAll(cfg.DatasetFolder, "_", "-")),
 		JobReleaseLabel:              "sda",
-		JobArgs:                      fmt.Sprintf("[\"job\", \"%d\"]", cfg.ExpectedNrFiles),
+		JobArgs:                      "[\"job\"]",
 		UserID:                       cfg.UserID,
 		DatasetID:                    cfg.DatasetID,
 		DatasetFolder:                cfg.DatasetFolder,
@@ -106,7 +105,7 @@ func createTemplateData(cfg *config.Config) (TemplateData, error) {
 		MailSMTPPort:                 strconv.Itoa(cfg.MailSMTPPort),
 		CertSecretName:               cfg.CertSecretName,
 		StorageSecretName:            cfg.StorageSecretName,
-		DataDirectory:                "/data",
+		DataDirectory:                cfg.JobDataDirectory,
 	}
 	return *templateData, nil
 }
@@ -145,17 +144,4 @@ func GetFileIDsPath(dataDirectory string, datasetFolder string) string {
 
 func GetStableIDsPath(dataDirectory string, datasetFolder string) string {
 	return fmt.Sprintf("%s/%s-stableIDs.txt", dataDirectory, datasetFolder)
-}
-
-func GetPathsForAccessionIDs(files []models.FileInfo, datasetFolder string) []string {
-	var paths []string
-	for _, f := range files {
-		if f.Status == "verified" &&
-			strings.Contains(f.InboxPath, datasetFolder) &&
-			!strings.Contains(f.InboxPath, "PRIVATE") {
-			paths = append(paths, f.InboxPath)
-		}
-	}
-	slog.Info("files found for accession id creation", "files_found", len(paths))
-	return paths
 }

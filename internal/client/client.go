@@ -178,39 +178,42 @@ func (c *Client) doRequest(method, path string, body []byte) ([]byte, error) {
 	return responseBody, nil
 }
 
-func (c *Client) WaitForAccession(target int, interval time.Duration, timeout time.Duration) ([]string, error) {
+func (c *Client) WaitForStatus(target int, status string, interval time.Duration, timeout time.Duration) ([]models.FileInfo, error) {
 	deadline := time.Now().Add(timeout)
 	for {
-		paths, err := c.getVerifiedFilePaths()
+
+		filteredFiles, err := c.GetFilesWithStatus(status)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(paths) >= target {
-			return paths, nil
+		current := len(filteredFiles)
+
+		if current >= target {
+			return filteredFiles, nil
 		}
 
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("timeout reached, only got %d/%d files", len(paths), target)
+			return nil, fmt.Errorf("timeout reached, only got %d/%d files", current, target)
 		}
-		slog.Info(fmt.Sprintf("found %d/%d files - waiting: %s timeout: %s", len(paths), target, interval, timeout))
+		slog.Info(fmt.Sprintf("found %d/%d files - waiting: %s timeout: %s", current, target, interval, timeout))
 		time.Sleep(interval)
 	}
 }
 
-func (c *Client) getVerifiedFilePaths() ([]string, error) {
-	files, err := c.GetUsersFilesWithPrefix()
+func (c *Client) GetFilesWithStatus(status string) ([]models.FileInfo, error) {
+	allFiles, err := c.GetUsersFilesWithPrefix()
 	if err != nil {
 		return nil, err
 	}
 
-	var paths []string
-	for _, f := range files {
-		if f.Status == "verified" &&
+	var filteredFiles []models.FileInfo
+	for _, f := range allFiles {
+		if f.Status == status &&
 			strings.Contains(f.InboxPath, c.datasetFolder) &&
 			!strings.Contains(f.InboxPath, "PRIVATE") {
-			paths = append(paths, f.InboxPath)
+			filteredFiles = append(filteredFiles, f)
 		}
 	}
-	return paths, nil
+	return filteredFiles, nil
 }

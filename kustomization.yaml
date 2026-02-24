@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - job.yaml
+
+secretGenerator:
+  - name: job-xml-secret
+    files:
+      - dataset.txt=data/xml/dataset.txt
+      - rems.txt=data/xml/rems.txt
+      - policy.txt=data/xml/policy.txt
+
+# This ensures that if the files change, the Job is recreated
+generatorOptions:
+  disableNameSuffixHash: false
