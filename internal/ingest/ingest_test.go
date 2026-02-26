@@ -3,6 +3,7 @@ package ingest
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/NBISweden/sda-bpctl/internal/models"
 )
@@ -31,6 +32,14 @@ func (m *mockClient) PostFileAccession(payload []byte) ([]byte, error) {
 
 func (m *mockClient) PostDatasetCreate(payload []byte) ([]byte, error) {
 	return m.Response, nil
+}
+
+func (m *mockClient) GetFilesWithStatus(status string) ([]models.FileInfo, error) {
+	return nil, nil
+}
+
+func (m *mockClient) WaitForStatus(target int, status string, interval time.Duration, timeout time.Duration) ([]models.FileInfo, error) {
+	return nil, nil
 }
 
 func setup(userID string, datasetFolder string) *mockClient {

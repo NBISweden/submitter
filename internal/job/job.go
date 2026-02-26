@@ -1,7 +1,6 @@
 package job
 
 import (
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -19,7 +18,7 @@ import (
 var configPath string
 
 var jobCmd = &cobra.Command{
-	Use:   "job <expectedFiles>",
+	Use:   "job",
 	Short: "Runs all dataset submission steps in order",
 	Long:  `Runs all dataset submission steps in order (ingestion -> accession -> dataset) takes a integer value representing the expected number of files to be included in the finalized dataset as argument. When a dataset is completed it ends with sending mail notifications and moving landing pages`,
 
@@ -57,25 +56,20 @@ func runJob() error {
 		return err
 	}
 
-	filesCount, err := ingest.Run(api, datasetFolder, userID)
+	filesIngested, err := ingest.Run(api, datasetFolder, userID)
 	if err != nil {
 		return err
 	}
 
-	_, err = api.WaitForAccession(filesCount, pollRate, timeout)
+	_, err = api.WaitForStatus(filesIngested, "verified", pollRate, timeout)
 	if err != nil {
 		return err
 	}
 
 	accession.DataDirectory = dataDirectory
-	accessionIDs, err := accession.Run(api, datasetFolder, userID)
+	_, err = accession.Run(api, datasetFolder, userID)
 	if err != nil {
 		return err
-	}
-
-	nrAccessionIDs := len(accessionIDs)
-	if nrAccessionIDs != filesCount {
-		return fmt.Errorf("accession did not return the expected number of files, got %d expected %d", nrAccessionIDs, filesCount)
 	}
 
 	waitTime := 10 * time.Minute
@@ -83,7 +77,7 @@ func runJob() error {
 	time.Sleep(waitTime)
 
 	dataset.DataDirectory = dataDirectory
-	err = dataset.Run(api, datasetFolder, datasetID, userID, accessionIDs)
+	err = dataset.Run(api, datasetFolder, datasetID, userID)
 	if err != nil {
 		return err
 	}

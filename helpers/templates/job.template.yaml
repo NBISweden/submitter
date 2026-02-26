@@ -95,7 +95,7 @@ spec:
         - name: xml-data
           secret:
             defaultMode: 288
-            secretName: {{ .JobName }}-xml-secret
+            secretName: job-xml-secret
         {{- end }}
         - name: tls
           secret:

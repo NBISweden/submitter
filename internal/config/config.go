@@ -95,7 +95,6 @@ func bindKeys(v *viper.Viper) {
 func setDefaults(v *viper.Viper) {
 	v.SetDefault("JOB_TIMEOUT", 4320)
 	v.SetDefault("JOB_POLL_RATE", 180)
-	v.SetDefault("JOB_EXPECTED_NR_FILES", 0)
 	v.SetDefault("JOB_DATA_DIRECTORY", "/data")
 
 	v.SetDefault("CLIENT_API_HOST", "https://api.bp.nbis.se")

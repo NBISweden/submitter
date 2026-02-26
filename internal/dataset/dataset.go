@@ -1,7 +1,6 @@
 package dataset
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,7 +56,7 @@ var datasetCmd = &cobra.Command{
 			}
 		}
 
-		fileIDsList, err := getFileIDs(datasetFolder, api)
+		fileIDsList, err := api.GetFilesWithStatus("verified")
 		if err != nil {
 			return err
 		}
@@ -95,10 +94,9 @@ type UserFiles struct {
 	InboxPath   string `json:"inboxPath"`
 }
 
-func Run(api *client.Client, datasetFolder string, datasetID string, userID string, fileIDsList []string) error {
+func Run(api *client.Client, datasetFolder string, datasetID string, userID string) error {
 
-	// TODO: Optimize this; another query to GetUsersFilesWithPrefix is redundant since It will hold the same information as in the fileIDsList []string
-	files, err := api.GetUsersFilesWithPrefix()
+	files, err := api.GetFilesWithStatus("ready")
 	if err != nil {
 		return err
 	}
@@ -108,51 +106,33 @@ func Run(api *client.Client, datasetFolder string, datasetID string, userID stri
 		return err
 	}
 
-	err = createDataset(api, datasetID, userID, fileIDsList)
+	err = createDataset(api, datasetID, userID, files)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func getFileIDs(datasetFolder string, api client.APIClient) ([]string, error) {
-	var fileIDsList []string
-	filePath := helpers.GetFileIDsPath(DataDirectory, datasetFolder)
-	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
-		files, err := api.GetUsersFilesWithPrefix()
-		if err != nil {
-			return nil, err
-		}
-		fileIDsList = helpers.GetPathsForAccessionIDs(files, datasetFolder)
-		return fileIDsList, nil
+func createDataset(api client.APIClient, datasetID string, userID string, files []models.FileInfo) error {
+	var accessionIDs []string
+	for _, file := range files {
+		accessionIDs = append(accessionIDs, file.AccessionID)
 	}
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close() //nolint:errcheck
 
-	slog.Info("reading", "filePath", filePath)
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		fileIDsList = append(fileIDsList, scanner.Text())
-	}
-	return fileIDsList, nil
-}
+	nrFiles := len(accessionIDs)
 
-func createDataset(api client.APIClient, datasetID string, userID string, fileIDsList []string) error {
-	slog.Info("starting dataset")
+	slog.Info("starting dataset", "nr_files", nrFiles)
 
-	if len(fileIDsList) > 100 {
-		err := sendInChunks(fileIDsList, api, datasetID, userID)
+	if nrFiles > 100 {
+		err := sendInChunks(accessionIDs, api, datasetID, userID)
 		if err != nil {
 			return err
 		}
 	}
 
-	if len(fileIDsList) <= 100 {
+	if len(files) <= 100 {
 		payload := Payload{
-			AccessionIDs: fileIDsList,
+			AccessionIDs: accessionIDs,
 			DatasetID:    datasetID,
 			User:         userID,
 		}

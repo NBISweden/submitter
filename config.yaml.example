@@ -5,7 +5,6 @@
 USER_ID: "user-1234"
 DATASET_ID: "aa-Dataset-abc"
 DATASET_FOLDER: "DATASET_ABC"
-JOB_EXPECTED_NR_FILES: 0
 CLIENT_ACCESS_TOKEN: "youraccesstoken"
 
 MAIL_ADDRESS: "myemail@example.com"

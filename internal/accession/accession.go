@@ -14,6 +14,7 @@ import (
 	"github.com/NBISweden/sda-bpctl/helpers"
 	"github.com/NBISweden/sda-bpctl/internal/client"
 	"github.com/NBISweden/sda-bpctl/internal/config"
+	"github.com/NBISweden/sda-bpctl/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -51,17 +52,12 @@ var accessionCmd = &cobra.Command{
 		}
 		defer file.Close() //nolint:errcheck
 
-		files, err := api.GetUsersFilesWithPrefix()
-		if err != nil {
-			return err
-		}
-
-		paths := helpers.GetPathsForAccessionIDs(files, datasetFolder)
+		files, err := api.GetFilesWithStatus("verified")
 		if dryRun {
 			slog.Info("dry run enabled, no accession ids will be created")
 			return nil
 		}
-		accessionIDs, err := postAccessionIDs(api, paths, userID)
+		accessionIDs, err := postAccessionIDs(api, files, userID)
 
 		for _, accessionID := range accessionIDs {
 			if _, err := file.WriteString(accessionID + "\n"); err != nil {
@@ -86,12 +82,7 @@ func init() {
 
 func Run(api client.APIClient, datasetFolder string, userID string) ([]string, error) {
 	slog.Info("starting accession")
-	files, err := api.GetUsersFilesWithPrefix()
-	if err != nil {
-		return nil, err
-	}
-
-	paths := helpers.GetPathsForAccessionIDs(files, datasetFolder)
+	paths, err := api.GetFilesWithStatus("verified")
 	accessionIDs, err := postAccessionIDs(api, paths, userID)
 	if err != nil {
 		return nil, err
@@ -101,9 +92,9 @@ func Run(api client.APIClient, datasetFolder string, userID string) ([]string, e
 	return accessionIDs, nil
 }
 
-func postAccessionIDs(api client.APIClient, paths []string, userID string) ([]string, error) {
+func postAccessionIDs(api client.APIClient, files []models.FileInfo, userID string) ([]string, error) {
 	var accessionIDs []string
-	for _, filepath := range paths {
+	for _, file := range files {
 		accessionID, err := generateAccessionID()
 		if err != nil {
 			return accessionIDs, err
@@ -111,7 +102,7 @@ func postAccessionIDs(api client.APIClient, paths []string, userID string) ([]st
 
 		payload, err := json.Marshal(map[string]string{
 			"accession_id": accessionID,
-			"filepath":     filepath,
+			"filepath":     file.InboxPath,
 			"user":         userID,
 		})
 		if err != nil {
@@ -128,7 +119,7 @@ func postAccessionIDs(api client.APIClient, paths []string, userID string) ([]st
 		accessionIDs = append(accessionIDs, accessionID)
 	}
 
-	slog.Info("accession IDs assigned", "nr_files", len(paths))
+	slog.Info("accession IDs assigned", "nr_files", len(files))
 	return accessionIDs, nil
 }
 
