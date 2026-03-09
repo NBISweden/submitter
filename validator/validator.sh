@@ -623,6 +623,12 @@ function check_files {
 
 # Function for checking that there are no empty files in IMAGES
 function check_file_sizes {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        numfmt="gnumfmt"
+    else
+        numfmt="numfmt"
+    fi
+
     cecho yellow "Checking file sizes ..."
     files_lines=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ --recursive)
     while IFS= read -r line; do
