@@ -912,8 +912,28 @@ else
     exit $ERROR_STATUS
 fi
 
-trap - EXIT
-remove_private_key
 cecho green "VALIDATION SUCCESSFUL !!!"
 cecho blue "Dataset stable ID: $dataset_id"
+
+cat << EOF
+
+     --------------------
+    | Setting up k8s job |
+     --------------------
+
+EOF
+
+# Decrypt rems file
+if ! crypt4gh decrypt -s c4gh.sec.pem -f "PRIVATE/rems.xml.c4gh"; then
+    cecho red "ERROR: rems decryption failed"
+    ERROR_STATUS=1
+fi
+
+# Copy metadata in data folder
+cp -f PRIVATE/rems.xml ../data/xml/rems.txt || exit 1
+cp -f xml-files/policy.xml ../data/xml/policy.txt || exit 1
+cp -f xml-files/dataset.xml ../data/xml/dataset.txt || exit 1
+
+trap - EXIT
+remove_private_key
 exit $ERROR_STATUS
