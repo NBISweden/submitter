@@ -64,6 +64,8 @@ LANDING_PAGE=false
 DRY_RUN=false
 MIN_FILE_SIZE=152
 ORG_NAME=""
+NAME=""
+EMAIL=""
 version=""
 dataset_id=""
 
@@ -74,6 +76,8 @@ function help {
     -c, --cluster     Cluster name (prod or staging)
     -u, --user        Username folder in the inbox bucket
     -d, --dataset     Dataset folder (or path) name in the inbox bucket
+    -n, --name        The actual name of the uploader
+    -e, --email       The actual e-mail of the uploader (for sending email)
     --clean           Clean up the files that are created by the script (except the dataset_id.txt file)
 END_USAGE
     exit 1
@@ -126,6 +130,21 @@ while (( "$#" )); do
             shift
             dataset="$1"
             ;;
+        -n|--name)
+            shift
+            NAME="$1"
+            while [[ -n "$2" && "$2" != -* ]]; do
+                NAME="$NAME $2"
+                shift
+            done
+            # Trim leading and trailing whitespace
+            NAME="${NAME#"${NAME%%[![:space:]]*}"}"
+            NAME="${NAME%"${NAME##*[![:space:]]}"}"
+            ;;
+        -e|--email)
+            shift
+            EMAIL="$1"
+            ;;
         --dry-run)
             DRY_RUN=true
             ;;
@@ -152,6 +171,16 @@ fi
 
 if [ -z "$dataset" ];then
     cecho red "ERROR: No dataset given"
+    help
+fi
+
+if [ -z "$NAME" ];then
+    cecho red "ERROR: No user name given"
+    help
+fi
+
+if [ -z "$EMAIL" ];then
+    cecho red "ERROR: No user email given"
     help
 fi
 
