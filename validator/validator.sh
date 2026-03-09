@@ -63,6 +63,7 @@ PRIVATE_FOLDER=true
 LANDING_PAGE=false
 DRY_RUN=false
 MIN_FILE_SIZE=152
+ORG_NAME=""
 version=""
 dataset_id=""
 
@@ -816,11 +817,11 @@ function organisation_name {
         exit 1
     fi
 
-    local org_name=$(xmllint --xpath "//ORGANISATION_SET/ORGANISATION/NAME/text()" xml-files/organisation.xml)
-    if [ -z "$org_name" ]; then
+    ORG_NAME=$(xmllint --xpath "//ORGANISATION_SET/ORGANISATION/NAME/text()" xml-files/organisation.xml)
+    if [ -z "$ORG_NAME" ]; then
         cecho red "There is no organisation name in xml"
     else
-        cecho green "Organisation name: $org_name"
+        cecho green "Organisation name: $ORG_NAME"
     fi
 
     cecho green "Done"
