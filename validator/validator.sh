@@ -44,6 +44,34 @@ if [ ! "$(command -v crypt4gh)" ];then
     exit 1
 fi
 
+# Determine whic crypt4gh version the user has (python or go)
+C4GHGEN=$(crypt4gh generate 2>&1)
+if [[ $C4GHGEN != *"the required flag"* ]]; then
+    c4gh_decrypt() {
+        local sk="$1"
+        local file="$2"
+        crypt4gh decrypt --sk "$sk" < "$file" > "${file%.c4gh}"
+    }
+    c4gh_encrypt() {
+        local sk="$1"
+        local pk="$2"
+        local file="$3"
+        crypt4gh encrypt --sk "$sk" --recipient_pk "$pk" < "$file" > "$file.c4gh"
+    }
+else
+    c4gh_decrypt() {
+        local sk="$1"
+        local file="$2"
+        crypt4gh decrypt -s "$sk" -f "$file"
+    }
+    c4gh_encrypt() {
+        local sk="$1"
+        local pk="$2"
+        local file="$3"
+        crypt4gh encrypt -s "$sk" -p "$pk" -f "$file"
+    }
+fi
+
 # OS-specific configurations
 if [[ "$OSTYPE" == "darwin"* ]]; then
     NUMFMT="gnumfmt"
@@ -476,19 +504,11 @@ function decrypt_xml_files {
     cecho yellow "Decrypting xml files ..."
     export C4GH_PASSPHRASE
     vault kv get -field=private_key bp-secrets/crypt4gh > c4gh.sec.pem
-    C4GHGEN=$(crypt4gh generate 2>&1)
 
     for xml_file in xml-files/*.c4gh; do
-        if [[ $C4GHGEN != *"the required flag"* ]]; then
-            if ! crypt4gh decrypt --sk c4gh.sec.pem < "$xml_file" > xml-files/"$(basename -s .c4gh "$xml_file")"; then
-                cecho red "ERROR: Decryption failed"
-                ERROR_STATUS=1
-            fi
-        else
-            if ! crypt4gh decrypt -s c4gh.sec.pem -f "$xml_file"; then
-                cecho red "ERROR: Decryption failed"
-                ERROR_STATUS=1
-            fi
+        if ! c4gh_decrypt c4gh.sec.pem "$xml_file"; then
+            cecho red "ERROR: Decryption failed for $xml_file"
+            ERROR_STATUS=1
         fi
     done
     rm xml-files/*.c4gh
@@ -830,17 +850,9 @@ function modify_dataset {
     curl https://raw.githubusercontent.com/NBISweden/EGA-SE-user-docs/main/crypt4gh_bp_key.pub -o bp_key.pub
 
     export C4GH_PASSPHRASE
-    C4GHGEN=$(crypt4gh generate 2>&1)
-    if [[ $C4GHGEN != *"the required flag"* ]]; then
-        if ! crypt4gh encrypt --sk c4gh.sec.pem --recipient_pk bp_key.pub < xml-files/dataset.xml > xml-files/dataset.xml.c4gh; then
-            cecho red "ERROR: Encryption failed"
-            exit 1
-        fi
-    else
-        if ! crypt4gh encrypt -s c4gh.sec.pem -p bp_key.pub -f xml-files/dataset.xml; then
-            cecho red "ERROR: Encryption failed"
-            exit 1
-        fi
+    if ! c4gh_encrypt c4gh.sec.pem bp_key.pub xml-files/dataset.xml; then
+        cecho red "ERROR: Encryption failed"
+        exit 1
     fi
 
     s3cmd_command del s3://"$INBOX_BUCKET"/"$user"/"$dataset"/METADATA/dataset.xml.c4gh
@@ -935,7 +947,7 @@ cat << EOF
 EOF
 
 # Decrypt rems file
-if ! crypt4gh decrypt -s c4gh.sec.pem -f "PRIVATE/rems.xml.c4gh"; then
+if ! c4gh_decrypt c4gh.sec.pem "PRIVATE/rems.xml.c4gh"; then
     cecho red "ERROR: rems decryption failed"
     ERROR_STATUS=1
 fi
