@@ -934,6 +934,17 @@ cp -f PRIVATE/rems.xml ../data/xml/rems.txt || exit 1
 cp -f xml-files/policy.xml ../data/xml/policy.txt || exit 1
 cp -f xml-files/dataset.xml ../data/xml/dataset.txt || exit 1
 
+# Create the config file
+cp  -f ../config.yaml.example ../config.yaml
+
+# Update the config file
+sed -i '' "s|USER_ID:.*|USER_ID: \"$user\"|" ../config.yaml
+sed -i '' "s|DATASET_ID:.*|DATASET_ID: \"$dataset_id\"|" ../config.yaml
+sed -i '' "s|DATASET_FOLDER:.*|DATASET_FOLDER: \"$dataset\"|" ../config.yaml
+sed -i '' "s|MAIL_UPLOADER:.*|MAIL_UPLOADER: \"$EMAIL\"|" ../config.yaml
+sed -i '' "s|MAIL_UPLOADER_NAME:.*|MAIL_UPLOADER_NAME: \"$NAME\"|" ../config.yaml
+sed -i '' "s|MAIL_UPLOADER_ORGANIZATION_NAME:.*|MAIL_UPLOADER_ORGANIZATION_NAME: \"$ORG_NAME\"|" ../config.yaml
+
 trap - EXIT
 remove_private_key
 exit $ERROR_STATUS
