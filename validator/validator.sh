@@ -938,6 +938,11 @@ fi
 cecho green "VALIDATION SUCCESSFUL !!!"
 cecho blue "Dataset stable ID: $dataset_id"
 
+if [[ "$cluster" == "staging" ]]; then
+    cecho magenta "Kubernetes job NOT deployed for staging cluster"
+    exit 0
+fi
+
 cat << EOF
 
      --------------------
@@ -949,7 +954,7 @@ EOF
 # Decrypt rems file
 if ! c4gh_decrypt c4gh.sec.pem "PRIVATE/rems.xml.c4gh"; then
     cecho red "ERROR: rems decryption failed"
-    ERROR_STATUS=1
+    exit 1
 fi
 
 # Copy metadata in data folder
@@ -967,6 +972,13 @@ sed_i "s|DATASET_FOLDER:.*|DATASET_FOLDER: \"$dataset\"|" ../config.yaml
 sed_i "s|MAIL_UPLOADER:.*|MAIL_UPLOADER: \"$EMAIL\"|" ../config.yaml
 sed_i "s|MAIL_UPLOADER_NAME:.*|MAIL_UPLOADER_NAME: \"$NAME\"|" ../config.yaml
 sed_i "s|MAIL_UPLOADER_ORGANIZATION_NAME:.*|MAIL_UPLOADER_ORGANIZATION_NAME: \"$ORG_NAME\"|" ../config.yaml
+
+pushd ..
+go build -o bpctl .
+./bpctl render -x
+kubectl kustomize . -o "$dataset".yaml
+kubectl -n sda-prod apply -f "$dataset".yaml
+popd
 
 trap - EXIT
 remove_private_key
