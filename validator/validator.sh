@@ -43,6 +43,23 @@ if [ ! "$(command -v crypt4gh)" ];then
     cecho red "crypt4gh command does not exist"
     exit 1
 fi
+
+# OS-specific configurations
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    NUMFMT="gnumfmt"
+    sed_i() { sed -i '' "$@"; }
+    sed_i_bak() { sed -i '.bak' "$@"; }
+else
+    NUMFMT="numfmt"
+    sed_i() { sed -i "$@"; }
+    sed_i_bak() { sed -i.bak "$@"; }
+fi
+
+if [ ! "$(command -v $NUMFMT)" ];then
+    cecho red "$NUMFMT command does not exist. On macOS, you can install it with 'brew install coreutils'."
+    exit 1
+fi
+
 crypt4gh_required_version="1.9.0"
 crypt4gh_current_version=$(crypt4gh -v)
 
@@ -623,17 +640,11 @@ function check_files {
 
 # Function for checking that there are no empty files in IMAGES
 function check_file_sizes {
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        numfmt="gnumfmt"
-    else
-        numfmt="numfmt"
-    fi
-
     cecho yellow "Checking file sizes ..."
     files_lines=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ --recursive)
     while IFS= read -r line; do
         size=$(echo "$line" | awk '{print $3}')
-        bytesize=$(numfmt --from=si $size)
+        bytesize=$($NUMFMT --from=si $size)
         if [[ "$bytesize" -lt $MIN_FILE_SIZE ]]; then
             path=$(echo $line | awk '{print $4}')
             ERROR_STATUS=1
@@ -813,7 +824,7 @@ function modify_dataset {
         cecho red "ERROR: dataset.xml file does not exist in xml-files folder"
         exit 1
     else
-        sed -i.bak -E "s/(<DATASET[^>]* alias=\"[^\"]*\")/\1 accession=\"$dataset_id\"/g" xml-files/dataset.xml
+        sed_i_bak -E "s/(<DATASET[^>]* alias=\"[^\"]*\")/\1 accession=\"$dataset_id\"/g" xml-files/dataset.xml
     fi
 
     curl https://raw.githubusercontent.com/NBISweden/EGA-SE-user-docs/main/crypt4gh_bp_key.pub -o bp_key.pub
@@ -938,12 +949,12 @@ cp -f xml-files/dataset.xml ../data/xml/dataset.txt || exit 1
 cp  -f ../config.yaml.example ../config.yaml
 
 # Update the config file
-sed -i '' "s|USER_ID:.*|USER_ID: \"$user\"|" ../config.yaml
-sed -i '' "s|DATASET_ID:.*|DATASET_ID: \"$dataset_id\"|" ../config.yaml
-sed -i '' "s|DATASET_FOLDER:.*|DATASET_FOLDER: \"$dataset\"|" ../config.yaml
-sed -i '' "s|MAIL_UPLOADER:.*|MAIL_UPLOADER: \"$EMAIL\"|" ../config.yaml
-sed -i '' "s|MAIL_UPLOADER_NAME:.*|MAIL_UPLOADER_NAME: \"$NAME\"|" ../config.yaml
-sed -i '' "s|MAIL_UPLOADER_ORGANIZATION_NAME:.*|MAIL_UPLOADER_ORGANIZATION_NAME: \"$ORG_NAME\"|" ../config.yaml
+sed_i "s|USER_ID:.*|USER_ID: \"$user\"|" ../config.yaml
+sed_i "s|DATASET_ID:.*|DATASET_ID: \"$dataset_id\"|" ../config.yaml
+sed_i "s|DATASET_FOLDER:.*|DATASET_FOLDER: \"$dataset\"|" ../config.yaml
+sed_i "s|MAIL_UPLOADER:.*|MAIL_UPLOADER: \"$EMAIL\"|" ../config.yaml
+sed_i "s|MAIL_UPLOADER_NAME:.*|MAIL_UPLOADER_NAME: \"$NAME\"|" ../config.yaml
+sed_i "s|MAIL_UPLOADER_ORGANIZATION_NAME:.*|MAIL_UPLOADER_ORGANIZATION_NAME: \"$ORG_NAME\"|" ../config.yaml
 
 trap - EXIT
 remove_private_key
