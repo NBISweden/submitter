@@ -112,6 +112,7 @@ ERROR_STATUS=0
 PRIVATE_FOLDER=true
 LANDING_PAGE=false
 DRY_RUN=false
+VALIDATION_ONLY=false
 MIN_FILE_SIZE=152
 ORG_NAME=""
 NAME=""
@@ -121,14 +122,16 @@ dataset_id=""
 
 function help {
     cat << END_USAGE
-    USAGE: $0 -u <username> -d <dataset-name> or $0 --clean
+    USAGE: $0 -c <cluster> -u <user-id> -d <dataset-name> -n <user-name> -e <user-email> or $0 --clean
     parameters:
-    -c, --cluster     Cluster name (prod or staging)
-    -u, --user        Username folder in the inbox bucket
-    -d, --dataset     Dataset folder (or path) name in the inbox bucket
-    -n, --name        The actual name of the uploader
-    -e, --email       The actual e-mail of the uploader (for sending email)
-    --clean           Clean up the files that are created by the script (except the dataset_id.txt file)
+    -c, --cluster       Cluster name (prod or staging)
+    -u, --user          Username folder in the inbox bucket
+    -d, --dataset       Dataset folder (or path) name in the inbox bucket
+    -n, --name          The actual name of the uploader
+    -e, --email         The actual e-mail of the uploader (for sending email)
+    --dry-run           Flag for running only the validation without modifying and moving metadata
+    --validation-only   Flag for running only the validation
+    --clean             Clean up the files that are created by the script (except the dataset_id.txt file)
 END_USAGE
     exit 1
 }
@@ -198,6 +201,9 @@ while (( "$#" )); do
         --dry-run)
             DRY_RUN=true
             ;;
+        --validation-only)
+            VALIDATION_ONLY=true
+            ;;
         -h|--help)
             help
             ;;
@@ -231,6 +237,11 @@ fi
 
 if [ -z "$EMAIL" ];then
     cecho red "ERROR: No user email given"
+    help
+fi
+
+if [ "$DRY_RUN" == "true" ] && [ "$VALIDATION_ONLY" == "true" ]; then
+    cecho red "ERROR: cannot use both --dry-run and --validation-only flags"
     help
 fi
 
@@ -909,7 +920,9 @@ then
 fi
 
 if [[ "$1" != "--clean" ]]; then
-    check_kubernetes_access
+    if [[ "$DRY_RUN" == false ]] && [[ "$VALIDATION_ONLY" == false ]]; then
+        check_kubernetes_access
+    fi
 
     get_credentials
 
@@ -955,6 +968,11 @@ fi
 
 cecho green "VALIDATION SUCCESSFUL !!!"
 cecho blue "Dataset stable ID: $dataset_id"
+
+if [[ "$VALIDATION_ONLY" == "true" ]]; then
+    cecho yellow "VALIDATION ONLY MODE"
+    exit 0
+fi
 
 if [[ "$cluster" == "staging" ]]; then
     cecho magenta "Kubernetes job NOT deployed for staging cluster"
