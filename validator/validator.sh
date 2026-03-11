@@ -44,6 +44,11 @@ if [ ! "$(command -v crypt4gh)" ];then
     exit 1
 fi
 
+if [ ! "$(command -v kubectl)" ];then
+    cecho red "kubectl command does not exist"
+    exit 1
+fi
+
 # Determine whic crypt4gh version the user has (python or go)
 C4GHGEN=$(crypt4gh generate 2>&1)
 if [[ $C4GHGEN != *"the required flag"* ]]; then
@@ -885,6 +890,17 @@ function organisation_name {
     cecho green "Done"
 }
 
+# Function for checking Kubernetes access
+function check_kubernetes_access {
+    if [[ "$cluster" == "prod" ]]; then
+        if ! kubectl -n sda-prod auth can-i create jobs >/dev/null 2>&1; then
+            cecho red "ERROR: You do not have access to the 'sda-prod' namespace"
+            cecho red "Please check if your KUBECONFIG is correctly set (or VPN)"
+            exit 1
+        fi
+    fi
+}
+
 vault token renew >/dev/null 2>&1
 if [[ "$?" != "0" ]] && [[ "$1" != "--clean" ]];
 then
@@ -893,6 +909,8 @@ then
 fi
 
 if [[ "$1" != "--clean" ]]; then
+    check_kubernetes_access
+
     get_credentials
 
     sanitize_user_dataset
