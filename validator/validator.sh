@@ -117,6 +117,7 @@ MIN_FILE_SIZE=152
 ORG_NAME=""
 NAME=""
 EMAIL=""
+ACCESS_TOKEN=""
 version=""
 dataset_id=""
 
@@ -129,6 +130,7 @@ function help {
     -d, --dataset       Dataset folder (or path) name in the inbox bucket
     -n, --name          The actual name of the uploader
     -e, --email         The actual e-mail of the uploader (for sending email)
+    -t, --token         Token for accessing the admin API
     --dry-run           Flag for running only the validation without modifying and moving metadata
     --validation-only   Flag for running only the validation
     --clean             Clean up the files that are created by the script (except the dataset_id.txt file)
@@ -198,6 +200,10 @@ while (( "$#" )); do
             shift
             EMAIL="$1"
             ;;
+        -t|--token)
+            shift
+            ACCESS_TOKEN="$1"
+            ;;
         --dry-run)
             DRY_RUN=true
             ;;
@@ -237,6 +243,11 @@ fi
 
 if [ -z "$EMAIL" ];then
     cecho red "ERROR: No user email given"
+    help
+fi
+
+if [ -z "$ACCESS_TOKEN" ];then
+    cecho red "ERROR: No access token given"
     help
 fi
 
@@ -1005,6 +1016,7 @@ cp  -f ../config.yaml.example ../config.yaml
 sed_i "s|USER_ID:.*|USER_ID: \"$user\"|" ../config.yaml
 sed_i "s|DATASET_ID:.*|DATASET_ID: \"$dataset_id\"|" ../config.yaml
 sed_i "s|DATASET_FOLDER:.*|DATASET_FOLDER: \"$dataset\"|" ../config.yaml
+sed_i "s|CLIENT_ACCESS_TOKEN:.*|CLIENT_ACCESS_TOKEN: \"$ACCESS_TOKEN\"|" ../config.yaml
 sed_i "s|MAIL_UPLOADER:.*|MAIL_UPLOADER: \"$EMAIL\"|" ../config.yaml
 sed_i "s|MAIL_UPLOADER_NAME:.*|MAIL_UPLOADER_NAME: \"$NAME\"|" ../config.yaml
 sed_i "s|MAIL_UPLOADER_ORGANIZATION_NAME:.*|MAIL_UPLOADER_ORGANIZATION_NAME: \"$ORG_NAME\"|" ../config.yaml
