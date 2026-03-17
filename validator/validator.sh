@@ -1013,7 +1013,7 @@ cp -f xml-files/dataset.xml ../data/xml/dataset.txt || exit 1
 cp  -f ../config.yaml.example ../config.yaml
 
 # Update the config file
-sed_i "s|USER_ID:.*|USER_ID: \"$user\"|" ../config.yaml
+sed_i "s|USER_ID:.*|USER_ID: \"${user//_/@}\"|" ../config.yaml
 sed_i "s|DATASET_ID:.*|DATASET_ID: \"$dataset_id\"|" ../config.yaml
 sed_i "s|DATASET_FOLDER:.*|DATASET_FOLDER: \"$dataset\"|" ../config.yaml
 sed_i "s|CLIENT_ACCESS_TOKEN:.*|CLIENT_ACCESS_TOKEN: \"$ACCESS_TOKEN\"|" ../config.yaml
