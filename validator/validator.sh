@@ -236,19 +236,21 @@ if [ -z "$dataset" ];then
     help
 fi
 
-if [ -z "$NAME" ];then
-    cecho red "ERROR: No user name given"
-    help
-fi
+if [ "$DRY_RUN" == "false" ] && [ "$VALIDATION_ONLY" == "false" ]; then
+    if [ -z "$NAME" ];then
+        cecho red "ERROR: No user name given"
+        help
+    fi
 
-if [ -z "$EMAIL" ];then
-    cecho red "ERROR: No user email given"
-    help
-fi
+    if [ -z "$EMAIL" ];then
+        cecho red "ERROR: No user email given"
+        help
+    fi
 
-if [ -z "$ACCESS_TOKEN" ];then
-    cecho red "ERROR: No access token given"
-    help
+    if [ -z "$ACCESS_TOKEN" ];then
+        cecho red "ERROR: No access token given"
+        help
+    fi
 fi
 
 if [ "$DRY_RUN" == "true" ] && [ "$VALIDATION_ONLY" == "true" ]; then
