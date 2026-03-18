@@ -1000,14 +1000,8 @@ cat << EOF
 
 EOF
 
-# Decrypt rems file
-if ! c4gh_decrypt c4gh.sec.pem "PRIVATE/rems.xml.c4gh"; then
-    cecho red "ERROR: rems decryption failed"
-    exit 1
-fi
-
 # Copy metadata in data folder
-cp -f PRIVATE/rems.xml ../data/xml/rems.txt || exit 1
+cp -f xml-files/rems.xml ../data/xml/rems.txt || exit 1
 cp -f xml-files/policy.xml ../data/xml/policy.txt || exit 1
 cp -f xml-files/dataset.xml ../data/xml/dataset.txt || exit 1
 
