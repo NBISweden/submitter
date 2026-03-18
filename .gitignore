@@ -29,6 +29,7 @@ config.yaml
 
 # Job manifest file in root dir
 job.yaml
+manifest.yaml
 
 # Binary if no output is specified
 bpctl

@@ -43,9 +43,15 @@ spec:
             - name: MAIL_UPLOADER
               value: {{ .MailUploader }}
             - name: MAIL_ADDRESS
-              value: {{ .MailAddress }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .MailSecretName }}
+                  key: MAIL_ADDRESS
             - name: MAIL_PASSWORD
-              value: {{ .MailPassword }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .MailSecretName }}
+                  key: MAIL_PASSWORD
             - name: MAIL_SMTP_HOST
               value: {{ .MailSMTPHost }}
             - name: MAIL_SMTP_PORT

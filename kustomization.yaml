@@ -10,7 +10,3 @@ secretGenerator:
       - dataset.txt=data/xml/dataset.txt
       - rems.txt=data/xml/rems.txt
       - policy.txt=data/xml/policy.txt
-
-# This ensures that if the files change, the Job is recreated
-generatorOptions:
-  disableNameSuffixHash: false

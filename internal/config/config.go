@@ -19,6 +19,7 @@ type Config struct {
 	ClientAccessToken            string `mapstructure:"CLIENT_ACCESS_TOKEN"`
 	CertSecretName               string `mapstructure:"CERT_SECRET_NAME"`
 	StorageSecretName            string `mapstructure:"STORAGE_SECRET_NAME"`
+	MailSecretName               string `mapstructure:"MAIL_SECRET_NAME"`
 	MailAddress                  string `mapstructure:"MAIL_ADDRESS"`
 	MailPassword                 string `mapstructure:"MAIL_PASSWORD"`
 	MailSMTPHost                 string `mapstructure:"MAIL_SMTP_HOST"`
@@ -82,6 +83,7 @@ func bindKeys(v *viper.Viper) {
 	v.BindEnv("MAIL_UPLOADER")
 	v.BindEnv("CERT_SECRET_NAME")
 	v.BindEnv("STORAGE_SECRET_NAME")
+	v.BindEnv("MAIL_SECRET_NAME")
 	v.BindEnv("S3_ARCHIVE_ENDPOINT")
 	v.BindEnv("S3_ARCHIVE_BUCKET")
 	v.BindEnv("S3_ARCHIVE_ACCESS_KEY")
@@ -99,6 +101,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("CLIENT_API_HOST", "https://api.bp.nbis.se")
 	v.SetDefault("CERT_SECRET_NAME", "sda-sda-svc-api-certs")
+	v.SetDefault("MAIL_SECRET_NAME", "sda-bpctl-mail")
 	v.SetDefault("STORAGE_SECRET_NAME", "sda-bpctl-storage")
 	v.SetDefault("S3_METADATA_ENDPOINT", "storage.sto3.safedc.net")
 	v.SetDefault("S3_METADATA_BUCKET", "public-metadata")
