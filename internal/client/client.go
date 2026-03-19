@@ -178,25 +178,26 @@ func (c *Client) doRequest(method, path string, body []byte) ([]byte, error) {
 	return responseBody, nil
 }
 
-func (c *Client) WaitForStatus(target int, status string, interval time.Duration, timeout time.Duration) ([]models.FileInfo, error) {
+func (c *Client) WaitForStatus(status string, interval time.Duration, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for {
 
-		filteredFiles, err := c.GetFilesWithStatus(status)
+		filesWithStatus, err := c.GetFilesWithStatus(status)
 		if err != nil {
-			return nil, err
+			return nil
 		}
 
-		current := len(filteredFiles)
+		nrFilesFound := len(filesWithStatus)
 
-		if current >= target {
-			return filteredFiles, nil
+		if nrFilesFound == 0 {
+			slog.Info(fmt.Sprintf("fouund %d files with status %s, waiting complete", nrFilesFound, status))
+			return nil
 		}
 
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("timeout reached, only got %d/%d files", current, target)
+			return fmt.Errorf("timeout reached, found %d files with status %s", nrFilesFound, status)
 		}
-		slog.Info(fmt.Sprintf("found %d/%d files - waiting: %s timeout: %s", current, target, interval, timeout))
+		slog.Info(fmt.Sprintf("found %d files still with status %s - waiting: %s timeout: %s", nrFilesFound, status, interval, timeout))
 		time.Sleep(interval)
 	}
 }

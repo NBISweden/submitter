@@ -38,8 +38,8 @@ func (m *mockClient) GetFilesWithStatus(status string) ([]models.FileInfo, error
 	return nil, nil
 }
 
-func (m *mockClient) WaitForStatus(target int, status string, interval time.Duration, timeout time.Duration) ([]models.FileInfo, error) {
-	return nil, nil
+func (m *mockClient) WaitForStatus(status string, interval time.Duration, timeout time.Duration) error {
+	return nil
 }
 
 func setup(userID string, datasetFolder string) *mockClient {

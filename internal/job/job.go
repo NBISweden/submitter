@@ -56,12 +56,12 @@ func runJob() error {
 		return err
 	}
 
-	filesIngested, err := ingest.Run(api, datasetFolder, userID)
+	_, err = ingest.Run(api, datasetFolder, userID)
 	if err != nil {
 		return err
 	}
 
-	_, err = api.WaitForStatus(filesIngested, "verified", pollRate, timeout)
+	err = api.WaitForStatus("uploaded", pollRate, timeout)
 	if err != nil {
 		return err
 	}
