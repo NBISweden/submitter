@@ -36,7 +36,7 @@ type TemplateData struct {
 	MailUploaderName             string
 	MailUploaderOrganizationName string
 	MailUploader                 string
-	MailSecretName							 string
+	MailSecretName               string
 	MailSMTPHost                 string
 	MailSMTPPort                 string
 	CertSecretName               string

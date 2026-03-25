@@ -57,7 +57,8 @@ func Run(cfg *config.Config) error {
 		return err
 	}
 
-	prefix := fmt.Sprintf("%s/%s", cfg.UserID, cfg.DatasetFolder)
+	bucketUserID := strings.ReplaceAll(cfg.UserID, "@", "_")
+	prefix := fmt.Sprintf("%s/%s", bucketUserID, cfg.DatasetFolder)
 	slog.Info("listing landing pages", "source_bucket", archiveBucket, "prefix", prefix)
 	objects, err := archiveStorage.ListObjects(archiveBucket, prefix)
 	if err != nil {
@@ -69,7 +70,7 @@ func Run(cfg *config.Config) error {
 	}
 
 	for _, object := range objects {
-		objectLocation := strings.ReplaceAll(fmt.Sprintf("%s/%s", "datasets", object.Key), fmt.Sprintf("/%s", cfg.DatasetFolder), "")
+		objectLocation := strings.ReplaceAll(fmt.Sprintf("%s/%s/%s", "datasets", cfg.DatasetID, object.Key), fmt.Sprintf("/%s", bucketUserID), "")
 		slog.Info("uploading", "destination_bucket", metadataBucket, "object_location", objectLocation)
 		reader, err := archiveStorage.GetObject(archiveBucket, object.Key)
 		if err != nil {
@@ -82,5 +83,4 @@ func Run(cfg *config.Config) error {
 		}
 	}
 	return nil
-
 }
