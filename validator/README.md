@@ -55,7 +55,7 @@ The ingestion works **ONLY** for the production cluster and can by run with the 
 ```
 
 where:
-- `prod-or-staging` is the cluster where the dataset is located
+- `prod` is the cluster where the dataset is located
 - `username` is the username folder name in inbox
 - `dataset-folder` is the dataset folder which should be in the form `DATASET_{identifier}`.
 - `full-name` is the first and last name of the uploader as it is in the ticket
