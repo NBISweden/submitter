@@ -19,7 +19,7 @@ type Storage struct {
 	client *minio.Client
 }
 
-func NewMinio(endpoint, accessKey, secretKey, sslCaCert string) (*Storage, error) {
+func NewMinio(endpoint, accessKey, secretKey, sslCaCert string) (storage.StorageClient, error) {
 	var caCertPool *x509.CertPool
 	if sslCaCert != "" {
 		caCert, err := os.ReadFile(sslCaCert)
@@ -80,4 +80,8 @@ func (s *Storage) GetObject(bucketName, objectName string) (io.ReadCloser, error
 func (s *Storage) PutObject(bucketName, objectName string, reader io.Reader, size int64) error {
 	_, err := s.client.PutObject(context.Background(), bucketName, objectName, reader, size, minio.PutObjectOptions{})
 	return err
+}
+
+func (s *Storage) RemoveObject(bucketName, objectName string, reader io.Reader) error {
+	return s.client.RemoveObject(context.Background(), bucketName, objectName, minio.RemoveObjectOptions{})
 }

@@ -66,16 +66,26 @@ spec:
                 secretKeyRef:
                   name: {{ .StorageSecretName }}
                   key: METADATA_SECRET_KEY
-            - name: S3_ARCHIVE_ACCESS_KEY
+            - name: S3_INBOX_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .StorageSecretName }}
                   key: ARCHIVE_ACCESS_KEY
-            - name: S3_ARCHIVE_SECRET_KEY
+            - name: S3_INBOX_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .StorageSecretName }}
                   key: ARCHIVE_SECRET_KEY
+            - name: C4GH_SEC_PEM
+              valueFrom:
+                secretKeyRef:
+                  name: {{ C4GHSecretName }}
+                  key: c4gh.sec.pem
+            - name: C4GH_PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ C4GHSecretName }}
+                  key: passphrase
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true

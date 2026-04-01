@@ -27,14 +27,16 @@ type Config struct {
 	MailUploaderName             string `mapstructure:"MAIL_UPLOADER_NAME"`
 	MailUploaderOrganizationName string `mapstructure:"MAIL_UPLOADER_ORGANIZATION_NAME"`
 	MailUploader                 string `mapstructure:"MAIL_UPLOADER"`
-	S3ArchiveEndpoint            string `mapstructure:"S3_ARCHIVE_ENDPOINT"`
-	S3ArchiveBucket              string `mapstructure:"S3_ARCHIVE_BUCKET"`
-	S3ArchiveAccessKey           string `mapstructure:"S3_ARCHIVE_ACCESS_KEY"`
-	S3ArchiveSecretKey           string `mapstructure:"S3_ARCHIVE_SECRET_KEY"`
+	S3InboxEndpoint              string `mapstructure:"S3_INBOX_ENDPOINT"`
+	S3InboxBucket                string `mapstructure:"S3_INBOX_BUCKET"`
+	S3InboxAccessKey             string `mapstructure:"S3_INBOX_ACCESS_KEY"`
+	S3InboxSecretKey             string `mapstructure:"S3_INBOX_SECRET_KEY"`
 	S3MetadataEndpoint           string `mapstructure:"S3_METADATA_ENDPOINT"`
 	S3MetadataBucket             string `mapstructure:"S3_METADATA_BUCKET"`
 	S3MetadataAccessKey          string `mapstructure:"S3_METADATA_ACCESS_KEY"`
 	S3MetadataSecretKey          string `mapstructure:"S3_METADATA_SECRET_KEY"`
+	C4GHSecPem                   string `mapstructure:"C4GH_SEC_PEM"`
+	C4GHPassphrase               string `mapstructure:"C4GH_PASSPHRASE"`
 }
 
 func NewConfig(configPath string) (*Config, error) {
@@ -84,14 +86,16 @@ func bindKeys(v *viper.Viper) {
 	v.BindEnv("CERT_SECRET_NAME")
 	v.BindEnv("STORAGE_SECRET_NAME")
 	v.BindEnv("MAIL_SECRET_NAME")
-	v.BindEnv("S3_ARCHIVE_ENDPOINT")
-	v.BindEnv("S3_ARCHIVE_BUCKET")
-	v.BindEnv("S3_ARCHIVE_ACCESS_KEY")
-	v.BindEnv("S3_ARCHIVE_SECRET_KEY")
+	v.BindEnv("S3_INBOX_ENDPOINT")
+	v.BindEnv("S3_INBOX_BUCKET")
+	v.BindEnv("S3_INBOX_ACCESS_KEY")
+	v.BindEnv("S3_INBOX_SECRET_KEY")
 	v.BindEnv("S3_METADATA_ENDPOINT")
 	v.BindEnv("S3_METADATA_BUCKET")
 	v.BindEnv("S3_METADATA_ACCESS_KEY")
 	v.BindEnv("S3_METADATA_SECRET_KEY")
+	v.BindEnv("C4GH_SEC_PEM")
+	v.BindEnv("C4GH_PASSPHRASE")
 }
 
 func setDefaults(v *viper.Viper) {
@@ -105,8 +109,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("STORAGE_SECRET_NAME", "sda-bpctl-storage")
 	v.SetDefault("S3_METADATA_ENDPOINT", "storage.sto3.safedc.net")
 	v.SetDefault("S3_METADATA_BUCKET", "public-metadata")
-	v.SetDefault("S3_ARCHIVE_ENDPOINT", "s3a4.sto2.safedc.net")
-	v.SetDefault("S3_ARCHIVE_BUCKET", "inbox-2024-01")
+	v.SetDefault("S3_INBOX_ENDPOINT", "s3a4.sto2.safedc.net")
+	v.SetDefault("S3_INBOX_BUCKET", "inbox-2024-01")
 	v.SetDefault("MAIL_SMTP_HOST", "mail.nbis.se")
 	v.SetDefault("MAIL_SMTP_PORT", 587)
 }
