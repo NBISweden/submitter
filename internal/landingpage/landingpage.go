@@ -58,7 +58,7 @@ func Run(cfg *config.Config) error {
 	}
 
 	bucketUserID := strings.ReplaceAll(cfg.UserID, "@", "_")
-	prefix := fmt.Sprintf("%s/%s", bucketUserID, cfg.DatasetFolder)
+	prefix := fmt.Sprintf("%s/%s/%s", bucketUserID, cfg.DatasetFolder, "LANDING_PAGE")
 	slog.Info("listing landing pages", "source_bucket", archiveBucket, "prefix", prefix)
 	objects, err := archiveStorage.ListObjects(archiveBucket, prefix)
 	if err != nil {
