@@ -42,6 +42,7 @@ type TemplateData struct {
 	CertSecretName               string
 	StorageSecretName            string
 	DataDirectory                string
+	C4GHSecretName               string
 }
 
 var renderCmd = &cobra.Command{
@@ -104,6 +105,7 @@ func createTemplateData(cfg *config.Config) (TemplateData, error) {
 		CertSecretName:               cfg.CertSecretName,
 		StorageSecretName:            cfg.StorageSecretName,
 		DataDirectory:                cfg.JobDataDirectory,
+		C4GHSecretName:               "c4gh",
 	}
 	return *templateData, nil
 }

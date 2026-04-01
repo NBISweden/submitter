@@ -72,23 +72,37 @@ will render a job.yaml manifest for you based on the configuration values you ha
 bpctl can consume configuration from either `config.yaml` or from environment variables. If both are supplied then the environment variables will take priority. If using config.yaml it is expected to be located in the root directory of the project. It can also be supplied by using the `--config` flag if located elsewhere.
 
 see the `config.yaml.example` for a base template with what fields to fill. The example shows a minimal config. The table below shows all possible values that can be configured:
-| Name | Default | Description | used by |
-| --------------- | --------------- | --------------- | --------------- |
-| USER_ID | "" | The user ID for the uploader, acts as identifier for the uploaded data | `ingest`, `accession`, `dataset`, `job`, `render` |
-| DATASET_ID | "" | The ID that will be set for the finalized dataset, will be used during the `dataset` command | `ingest`, `accession`, `dataset`, `job`, `mail`, `render` |
-| DATASET_FOLDER | "" | The folder where the uploaded data resides in s3inbox | `ingest`, `accession`, `dataset`, `job`, `mail`, `render` |
-| JOB_TIMEOUT | 3 | A integer value, representing the number of minutes before the job times out when waiting for `accession` | `job`, `render` |
-| JOB_POLL_RATE | 2 | A integer value, representing the number of minutes between each polling interval when waiting for `accession`, needs to be less than  the `JOB_TIMEOUT` value | `job`, `render` |
-| JOB_EXPECTED_NR_FILES | 0 | The expected number of files to be part of the finalized dataset, set this when using `render` to include it in the rendered job.yaml | `job`, `render` |
-| CLIENT_API_HOST | "https://api.bp.nbis.se" | The hostname for the SDA API to communicate with | `ingest`, `accession`, `dataset`, `job` |
-| CLIENT_ACCESS_TOKEN | "" | The access token to authenticate towards the client api host | Yes | `ingest`, `accession`, `dataset`, `job` |
-| MAIL_ADDRESS | "" | Used for the `mail` command, this will be the email address the outgoing emails will be sent from | `mail` |
-| MAIL_PASSWORD | "" | Password associated with mail address | `mail` |
-| MAIL_UPLOADER | "" | Mail address to the uploader, this is the address the outgoing email will be sent to | `mail` |
-| MAIL_UPLOADER_NAME | "" | Name of the uploader | `mail` |
-| MAIL_SMTP_HOST | "mail.nbis.se" | Hostname to a mail server to relay mails through | `mail` |
-| MAIL_SMTP_PORT | 587 | Port for the mail server | `mail` |
-| CERT_SECRET_NAME | "sda-sda-svc-api-certs" | The name of the kubernetes secret that holds a tls certificate to use | `job`, `render` |
+| Name                              | Default                           |
+| --------------------------------- | --------------------------------- |
+| DATASET_FOLDER                    | none                              |
+| DATASET_ID                        | none                              | 
+| USER_ID                           | none                              |
+| SSL_CA_CERT                       | none                              |
+| JOB_TIMEOUT                       | 4320                              |
+| JOB_POLL_RATE                     | 180                               |
+| JOB_DATA_DIRECTORY                | "/data"                           |
+| CLIENT_API_HOST                   | "https://api.bp.nbis.se"          |
+| CLIENT_ACCESS_TOKEN               | "sda-bpctl-mail"                  |
+| CERT_SECRET_NAME                  | "sda-sda-svc-api-certs"           |
+| STORAGE_SECRET_NAME               | "sda-bpctl-storage"               |
+| MAIL_SECRET_NAME                  | none                              |
+| MAIL_ADDRESS                      | none                              |
+| MAIL_PASSWORD                     | none                              |
+| MAIL_SMTP_HOST                    | "mail.nbis.se"                    |
+| MAIL_SMTP_PORT                    | 587                               |
+| MAIL_UPLOADER_NAME                | none                              |
+| MAIL_UPLOADER_ORGANIZATION_NAME   | none                              |
+| MAIL_UPLOADER                     | none                              |
+| S3_INBOX_ENDPOINT                 | "s3a4.sto2.safedc.net"            |
+| S3_INBOX_BUCKET                   | "inbox-2024-01"                   |
+| S3_INBOX_ACCESS_KEY               | none                              |
+| S3_INBOX_SECRET_KEY               | none                              |
+| S3_METADATA_ENDPOINT              | "storage.sto3.safedc.net"         |
+| S3_METADATA_BUCKET                | "public-metadata"                 |
+| S3_METADATA_ACCESS_KEY            | none                              |
+| S3_METADATA_SECRET_KEY            | none                              |
+| C4GH_SEC_PEM                      | none                              |
+| C4GH_PASSPHRASE                   | none                              |
 
 ### ingest
 
@@ -153,6 +167,14 @@ Will send email notifications about dataset finalization to needed parties with 
 ```
 
 Will render a 'opinionated' kubernetes yaml manifest that defines a `job` resrouce. Fields specific for a given dataset is populated from `config.yaml` while other big picture specific deployment fields such as `CLIENT_API_HOST`, `CERT_SECRET_NAME` and similar are hard coded. This is not a generic template that is meant to fit multiple purposes, It's specifically made to fit the big picture kubernetes deployment in NBIS.
+
+### landingpage
+
+```bash
+./bpctl landingpage [flags]
+```
+
+Will look for any objects in `S3_INBOX_BUCKET` that have a `LANDING_PAGE` in their part and try to get them, decrypt them using crypt4gh and finally put the decrypted objects to a specified location in `METADATA_INBOX_BUCKET`. If the put is successfull it will remove the encrypted object from the `S3_INBOX_BUCKET`
 
 ### job
 

@@ -1,14 +1,21 @@
 package landingpage
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log/slog"
+	"path"
 	"strings"
 
 	"github.com/NBISweden/sda-bpctl/cmd"
 	"github.com/NBISweden/sda-bpctl/internal/config"
-	storage "github.com/NBISweden/sda-bpctl/internal/storage/client"
+	storage "github.com/NBISweden/sda-bpctl/internal/storage"
+	storageClient "github.com/NBISweden/sda-bpctl/internal/storage/client"
+	"github.com/neicnordic/crypt4gh/keys"
+	"github.com/neicnordic/crypt4gh/streaming"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/chacha20poly1305"
 )
 
 var dryRun bool
@@ -44,43 +51,103 @@ func init() {
 }
 
 func Run(cfg *config.Config) error {
-	archiveBucket := cfg.S3ArchiveBucket
+	bucketUserID := strings.ReplaceAll(cfg.UserID, "@", "_")
+	datasetFolder := cfg.DatasetFolder
+	inboxBucket := cfg.S3InboxBucket
 	metadataBucket := cfg.S3MetadataBucket
 	sslCaCert := cfg.SslCaCert
-	archiveStorage, err := storage.NewMinio(cfg.S3ArchiveEndpoint, cfg.S3ArchiveAccessKey, cfg.S3ArchiveSecretKey, sslCaCert)
+
+	privateKey, err := loadKey(cfg)
 	if err != nil {
 		return err
 	}
 
-	metadataStorage, err := storage.NewMinio(cfg.S3MetadataEndpoint, cfg.S3MetadataAccessKey, cfg.S3MetadataSecretKey, sslCaCert)
+	inboxStorage, err := storageClient.NewMinio(cfg.S3InboxEndpoint, cfg.S3InboxAccessKey, cfg.S3InboxSecretKey, sslCaCert)
 	if err != nil {
 		return err
 	}
 
-	bucketUserID := strings.ReplaceAll(cfg.UserID, "@", "_")
-	prefix := fmt.Sprintf("%s/%s/%s", bucketUserID, cfg.DatasetFolder, "LANDING_PAGE")
-	slog.Info("listing landing pages", "source_bucket", archiveBucket, "prefix", prefix)
-	objects, err := archiveStorage.ListObjects(archiveBucket, prefix)
+	metadataStorage, err := storageClient.NewMinio(cfg.S3MetadataEndpoint, cfg.S3MetadataAccessKey, cfg.S3MetadataSecretKey, sslCaCert)
 	if err != nil {
 		return err
 	}
 
-	if len(objects) == 0 {
-		slog.Info("No landing pages found")
+	objects, err := getLandingPages(bucketUserID, datasetFolder, inboxBucket, inboxStorage)
+	if err != nil {
+		return err
 	}
+
+	slog.Info("found landing pages", "nr_objects", len(objects))
 
 	for _, object := range objects {
-		objectLocation := strings.ReplaceAll(fmt.Sprintf("%s/%s/%s", "datasets", cfg.DatasetID, object.Key), fmt.Sprintf("/%s", bucketUserID), "")
-		slog.Info("uploading", "destination_bucket", metadataBucket, "object_location", objectLocation)
-		reader, err := archiveStorage.GetObject(archiveBucket, object.Key)
-		if err != nil {
-			return fmt.Errorf("failed to get %s from %s : %v", object.Key, archiveBucket, err)
+		if dryRun {
+			slog.Info("found", "object", object.Key)
+			continue
 		}
-		err = metadataStorage.PutObject(metadataBucket, objectLocation, reader, object.Size)
-		reader.Close()
+
+		encryptedReader, err := inboxStorage.GetObject(inboxBucket, object.Key)
 		if err != nil {
-			return fmt.Errorf("failed to put %s to %s : %v", object.Key, metadataBucket, err)
+			return err
+		}
+		defer encryptedReader.Close()
+
+		decryptedReader, err := streaming.NewCrypt4GHReader(encryptedReader, privateKey, nil)
+		if err != nil {
+			return err
+		}
+		defer decryptedReader.Close()
+
+		inboxLocation := object.Key
+		prefix := fmt.Sprintf("%s/%s", bucketUserID, datasetFolder)
+		remainingPath := strings.TrimPrefix(object.Key, prefix)
+		metadataLocation := path.Join("datasets", cfg.DatasetID, remainingPath)
+		metadataLocation = strings.TrimSuffix(metadataLocation, ".c4gh")
+		err = move(inboxBucket, inboxLocation, metadataBucket, metadataLocation, encryptedReader, decryptedReader, inboxStorage, metadataStorage)
+		if err != nil {
+			return fmt.Errorf("could not move object %s : %v", object.Key, err)
 		}
 	}
+
+	if dryRun {
+		slog.Info("dry run enabled, no objects moved")
+	}
+
+	return nil
+}
+
+func loadKey(cfg *config.Config) ([chacha20poly1305.KeySize]byte, error) {
+	pemReader := bytes.NewReader([]byte(cfg.C4GHSecPem))
+	passphraseBytes := []byte(cfg.C4GHPassphrase)
+	key, err := keys.ReadPrivateKey(pemReader, passphraseBytes)
+	if err != nil {
+		return [chacha20poly1305.KeySize]byte{}, err
+	}
+	return key, nil
+}
+
+func getLandingPages(bucketUserID, datasetFolder, bucketName string, inboxStorage storage.StorageClient) ([]storage.ObjectInfo, error) {
+	prefix := fmt.Sprintf("%s/%s/%s", bucketUserID, datasetFolder, "LANDING_PAGE")
+	slog.Info("listing landing pages", "source_bucket", bucketName, "prefix", prefix)
+	objects, err := inboxStorage.ListObjects(bucketName, prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	return objects, nil
+}
+
+func move(sourceBucket, sourceLocation, destinationBucket, destinationLocation string, sourceReader, destinationReader io.Reader, sourceClient, destinationClient storage.StorageClient) error {
+	slog.Info("uploading", "destination_bucket", destinationBucket, "object_location", destinationLocation)
+	err := destinationClient.PutObject(destinationBucket, destinationLocation, destinationReader, -1)
+	if err != nil {
+		return fmt.Errorf("failed to put %s to %s : %v", destinationLocation, destinationBucket, err)
+	}
+
+	slog.Info("deleting", "source_bucket", sourceBucket, "source_location", sourceLocation)
+	err = sourceClient.RemoveObject(sourceBucket, sourceLocation, sourceReader)
+	if err != nil {
+		return fmt.Errorf("failed to delete %s from %s: %v", sourceLocation, sourceBucket, err)
+	}
+
 	return nil
 }
