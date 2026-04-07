@@ -54,6 +54,7 @@ var accessionCmd = &cobra.Command{
 
 		files, err := api.GetFilesWithStatus("verified")
 		if dryRun {
+			slog.Info("accession", "nr_files", len(files))
 			slog.Info("dry run enabled, no accession ids will be created")
 			return nil
 		}
