@@ -79,12 +79,12 @@ spec:
             - name: C4GH_SEC_PEM
               valueFrom:
                 secretKeyRef:
-                  name: {{ C4GHSecretName }}
+                  name: {{ .C4GHSecretName }}
                   key: c4gh.sec.pem
             - name: C4GH_PASSPHRASE
               valueFrom:
                 secretKeyRef:
-                  name: {{ C4GHSecretName }}
+                  name: {{ .C4GHSecretName }}
                   key: passphrase
           securityContext:
             allowPrivilegeEscalation: false
