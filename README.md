@@ -2,7 +2,7 @@
 
 A tool that can be used to deal with administrative workflows for the big picture project. It supports three primary functions, making data ingestion, assigning accession ids to each ingested file, and creating a dataset for all files ingested with a accession id.
 
-It can be used either locally as a cli tool or be packaged and run as a job in kubernetes. This is on one hand powerful and on the other hand, sometimes confusing and unintuitive, in an attempt to clarify the difference in logic based on how the tool is used the terms used will be **job** and **cli** in **bold** when describing the different logics.
+bpctl can be used locally as a cli tool or it can be packaged and run as a job in kubernetes. 
 
 The core functionallity of this tool is wrapping logic around the sensitive data archive (SDA) api, usually just referenced as 'the API' in this project. To fully understand how this is expected to work you should be familiar with the SDA and its api.
 
@@ -112,10 +112,6 @@ see the `config.yaml.example` for a base template with what fields to fill. The 
 
 The ingest command will lookup all the files for the `USER_ID` that resides in `DATASET_FOLDER`, filter out all files that are not in either a directory `LANDING_PAGE` or `PRIVATE` and any file that does not have the event `uploaded`. 
 
-**job:** the number of files retrieved will be compared to the `JOB_EXPECTED_NR_FILES` value, if they match the files will be sent for ingestion. If not the job will fail. 
-
-**cli:** the files found will be sent for ingestion without evaluation. In that case the responsibility is on the user to ensure with a `--dry-run` before that the number of files are the desired amount.
-
 Files sent to ingestion are done so trough the sda api `POST /ingest` endpoint.
 
 ### accession
@@ -126,9 +122,7 @@ Files sent to ingestion are done so trough the sda api `POST /ingest` endpoint.
 
 The accession command will get a list of files for the `USER_ID` that resides in `DATASET_FOLDER` and have the event `verified`.
 
-**job:** will poll the api according to `JOB_POLL_RATE` and wait until it finds the amount of files that matches `JOB_EXPECTED_NR_FILES` or until it times out according to `JOB_TIMEOUT`. When the expected number of files are found it will send a request to the sda api `POST /accession` endpoint with the files.
-
-**cli:** will try create a file called `<DATASET_FOLDER>-fileIDs.txt` in the `--data-directory` directory. It will retrieve the list of files and after successful call to `POST /accession` it will write the accessionIDs to the file `<DATASET_FOLDER>-fileIDs.txt`. This is legacy logic owned from the `ingestor.sh` script and makes it so that you can store a intermediate state and keep track of the accession ids retrieved between runs of `accession` and `dataset`.
+Will create a file called `<DATASET_FOLDER>-fileIDs.txt` in the `--data-directory` directory. It will retrieve the list of files and after successful call to `POST /accession` it will write the accessionIDs to the file `<DATASET_FOLDER>-fileIDs.txt`. This is legacy logic owned from the `ingestor.sh` script and makes it so that you can store a intermediate state and keep track of the accession ids retrieved between runs of `accession` and `dataset`.
 
 ### dataset
 
@@ -138,9 +132,7 @@ The accession command will get a list of files for the `USER_ID` that resides in
 
 The dataset command will retrieve a list of accessionIDs and send a request to the sda api `POST /dataset`
 
-**job:** will consume the list of accessionIDs by a in memory variable produced by the previous step in `accession` and send a list of files to be mapped to a dataset to `POST /dataset/create`
-
-**cli:** will try to read from `<DATASET_FOLDER>-fileIDs.txt` to identify the files to be included in a dataset. If the file cannot be found it will make a call to `GET /user/files?path_prefix=<DATASET_FOLDER>` to find them and send a request to `POST /dataset/create` with the files.
+Will try to read from `<DATASET_FOLDER>-fileIDs.txt` to identify the files to be included in a dataset. If the file cannot be found it will make a call to `GET /user/files?path_prefix=<DATASET_FOLDER>` to find them and send a request to `POST /dataset/create` with the files.
 
 ### mail
 
@@ -148,17 +140,15 @@ The dataset command will retrieve a list of accessionIDs and send a request to t
 ./bpctl mail [flags]
 ```
 
-Will send email notifications about dataset finalization to needed parties with information and attachments specifically for each.
+Will send email notifications about dataset finalization to a fixed list of parties with information and attachments specifically for each.
 
-`bigpicture submission`: recieves a mail about dataset creation and attachments with `dataset.xml` and `policy.xml`
+`bigpicture submission`: recieves a mail about dataset creation and attachments with `dataset.txt` and `policy.txt`
 
-`bigpicture PO`: recieves a mail about dataset creation and attachments with `rems.txt`, `dataset.txt` and `policy.xml`
+`bigpicture PO`: recieves a mail about dataset creation and attachments with `rems.txt`, `dataset.txt` and `policy.txt`
 
 `uploader`: recieves a mail confirming the creation of the dataset is completed with attachments `<datasetFolder>-stableIDs.txt`
 
-**job:** will store `<datasetFolder>-stableIDs.txt` in memory during creation and relay it as attachments. The xml attachments will be read from `/data/xml` and will expect a kubernetes `secret` to mount the data from. The user is responsible for ensuring this secret exists and have the correct contents.
-
-**cli:** will search for `<datasetFolder>-stableIDs.txt` in `data-directory/` and xml files in `data-directory/xml`
+Attachements such as `rems.txt`, `dataset.txt` and `policy.txt` needs to be available under `--data-directory` when running as a job. During the job process it will produce  a `<datasetFolder>-stableIDs.txt` and include it. If running the mail as a standalone command the `<datasetFolder>-stableIDs.txt` also needs to be available under `--data-directory`.
 
 ### render
 

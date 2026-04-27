@@ -67,14 +67,15 @@ func runJob() error {
 	}
 
 	accession.DataDirectory = dataDirectory
-	_, err = accession.Run(api, datasetFolder, userID)
+	filesAccession, err := accession.Run(api, datasetFolder, userID)
 	if err != nil {
 		return err
 	}
 
-	waitTime := 10 * time.Minute
-	slog.Info("waiting before sending dataset creation request", "delay", waitTime)
-	time.Sleep(waitTime)
+	_, err = api.WaitForStatus(len(filesAccession), "ready", pollRate, timeout)
+	if err != nil {
+		return err
+	}
 
 	dataset.DataDirectory = dataDirectory
 	err = dataset.Run(api, datasetFolder, datasetID, userID)
