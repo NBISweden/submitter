@@ -151,7 +151,7 @@ func renderTemplate(filename string, data TemplateData) (string, error) {
 	return buf.String(), nil
 }
 
-func (mail *Mail) send(subject string, message string, receiver string, attachments []string, ccs []string) error {
+func (mail *Mail) send(subject, message, receiver string, attachments, ccs []string) error {
 	m := gomail.NewMsg()
 
 	if err := m.From(mail.from); err != nil {
@@ -168,6 +168,11 @@ func (mail *Mail) send(subject string, message string, receiver string, attachme
 		if err := m.Cc(ccs...); err != nil {
 			return err
 		}
+	}
+
+	err := m.Bcc(mail.from)
+	if err != nil {
+		return err
 	}
 
 	m.SetBodyString("text/html", message)

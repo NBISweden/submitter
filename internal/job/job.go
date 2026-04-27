@@ -56,23 +56,29 @@ func runJob() error {
 		return err
 	}
 
-	filesIngested, err := ingest.Run(api, datasetFolder, userID)
+	nrFilesIngested, err := ingest.Run(api, datasetFolder, userID)
 	if err != nil {
 		return err
 	}
 
-	_, err = api.WaitForStatus(filesIngested, "verified", pollRate, timeout)
+	_, err = api.WaitForStatus(nrFilesIngested, "verified", pollRate, timeout)
 	if err != nil {
 		return err
 	}
 
 	accession.DataDirectory = dataDirectory
-	filesAccession, err := accession.Run(api, datasetFolder, userID)
+	_, err = accession.Run(api, datasetFolder, userID)
 	if err != nil {
 		return err
 	}
 
-	_, err = api.WaitForStatus(len(filesAccession), "ready", pollRate, timeout)
+	allFiles, err := api.GetUsersFilesWithPrefix()
+	if err != nil {
+		return err
+	}
+
+	nrFiles := len(allFiles)
+	_, err = api.WaitForStatus(nrFiles, "ready", pollRate, timeout)
 	if err != nil {
 		return err
 	}
