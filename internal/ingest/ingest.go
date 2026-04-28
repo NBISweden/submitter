@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/NBISweden/sda-bpctl/cmd"
+	"github.com/NBISweden/sda-bpctl/helpers"
 	"github.com/NBISweden/sda-bpctl/internal/client"
 	"github.com/NBISweden/sda-bpctl/internal/config"
 	"github.com/NBISweden/sda-bpctl/internal/models"
@@ -60,26 +60,9 @@ func Run(api client.APIClient, datasetFolder string, userID string) (int, error)
 	return ingestFiles(api, datasetFolder, userID, files)
 }
 
-func filterFiles(files []models.FileInfo, datasetFolder string) []string {
-	var filteredFiles []string
-	for _, f := range files {
-		if f.Status != "uploaded" {
-			continue
-		}
-		if !strings.Contains(f.InboxPath, datasetFolder) {
-			continue
-		}
-		if strings.Contains(f.InboxPath, "PRIVATE") || strings.Contains(f.InboxPath, "LANDING_PAGE") {
-			continue
-		}
-		filteredFiles = append(filteredFiles, f.InboxPath)
-	}
-	return filteredFiles
-}
-
 func ingestFiles(api client.APIClient, datasetFolder string, userID string, files []models.FileInfo) (int, error) {
 	slog.Info("starting ingest")
-	fileList := filterFiles(files, datasetFolder)
+	fileList := helpers.FilterFiles(files, datasetFolder)
 	filesCount := len(fileList)
 	okResponses := len(fileList)
 
