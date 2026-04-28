@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/NBISweden/sda-bpctl/cmd"
+	"github.com/NBISweden/sda-bpctl/helpers"
 	"github.com/NBISweden/sda-bpctl/internal/accession"
 	"github.com/NBISweden/sda-bpctl/internal/client"
 	"github.com/NBISweden/sda-bpctl/internal/config"
@@ -77,7 +78,9 @@ func runJob() error {
 		return err
 	}
 
-	nrFiles := len(allFiles)
+	filteredFiles := helpers.FilterFiles(allFiles, datasetFolder)
+
+	nrFiles := len(filteredFiles)
 	_, err = api.WaitForStatus(nrFiles, "ready", pollRate, timeout)
 	if err != nil {
 		return err

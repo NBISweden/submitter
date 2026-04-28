@@ -12,6 +12,7 @@ import (
 
 	"github.com/NBISweden/sda-bpctl/cmd"
 	"github.com/NBISweden/sda-bpctl/internal/config"
+	"github.com/NBISweden/sda-bpctl/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -144,4 +145,21 @@ func GetFileIDsPath(dataDirectory string, datasetFolder string) string {
 
 func GetStableIDsPath(dataDirectory string, datasetFolder string) string {
 	return fmt.Sprintf("%s/%s-stableIDs.txt", dataDirectory, datasetFolder)
+}
+
+func FilterFiles(files []models.FileInfo, datasetFolder string) []string {
+	var filteredFiles []string
+	for _, f := range files {
+		if f.Status != "uploaded" {
+			continue
+		}
+		if !strings.Contains(f.InboxPath, datasetFolder) {
+			continue
+		}
+		if strings.Contains(f.InboxPath, "PRIVATE") || strings.Contains(f.InboxPath, "LANDING_PAGE") {
+			continue
+		}
+		filteredFiles = append(filteredFiles, f.InboxPath)
+	}
+	return filteredFiles
 }
