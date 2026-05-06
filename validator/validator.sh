@@ -43,56 +43,6 @@ if [ ! "$(command -v crypt4gh)" ];then
     cecho red "crypt4gh command does not exist"
     exit 1
 fi
-
-if [ ! "$(command -v kubectl)" ];then
-    cecho red "kubectl command does not exist"
-    exit 1
-fi
-
-# Determine whic crypt4gh version the user has (python or go)
-C4GHGEN=$(crypt4gh generate 2>&1)
-if [[ $C4GHGEN != *"the required flag"* ]]; then
-    c4gh_decrypt() {
-        local sk="$1"
-        local file="$2"
-        crypt4gh decrypt --sk "$sk" < "$file" > "${file%.c4gh}"
-    }
-    c4gh_encrypt() {
-        local sk="$1"
-        local pk="$2"
-        local file="$3"
-        crypt4gh encrypt --sk "$sk" --recipient_pk "$pk" < "$file" > "$file.c4gh"
-    }
-else
-    c4gh_decrypt() {
-        local sk="$1"
-        local file="$2"
-        crypt4gh decrypt -s "$sk" -f "$file"
-    }
-    c4gh_encrypt() {
-        local sk="$1"
-        local pk="$2"
-        local file="$3"
-        crypt4gh encrypt -s "$sk" -p "$pk" -f "$file"
-    }
-fi
-
-# OS-specific configurations
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    NUMFMT="gnumfmt"
-    sed_i() { sed -i '' "$@"; }
-    sed_i_bak() { sed -i '.bak' "$@"; }
-else
-    NUMFMT="numfmt"
-    sed_i() { sed -i "$@"; }
-    sed_i_bak() { sed -i.bak "$@"; }
-fi
-
-if [ ! "$(command -v $NUMFMT)" ];then
-    cecho red "$NUMFMT command does not exist. On macOS, you can install it with 'brew install coreutils'."
-    exit 1
-fi
-
 crypt4gh_required_version="1.9.0"
 crypt4gh_current_version=$(crypt4gh -v)
 
@@ -112,28 +62,18 @@ ERROR_STATUS=0
 PRIVATE_FOLDER=true
 LANDING_PAGE=false
 DRY_RUN=false
-VALIDATION_ONLY=false
 MIN_FILE_SIZE=152
-ORG_NAME=""
-NAME=""
-EMAIL=""
-ACCESS_TOKEN=""
 version=""
 dataset_id=""
 
 function help {
     cat << END_USAGE
-    USAGE: $0 -c <cluster> -u <user-id> -d <dataset-name> -n <user-name> -e <user-email> or $0 --clean
+    USAGE: $0 -u <username> -d <dataset-name> or $0 --clean
     parameters:
-    -c, --cluster       Cluster name (prod or staging)
-    -u, --user          Username folder in the inbox bucket
-    -d, --dataset       Dataset folder (or path) name in the inbox bucket
-    -n, --name          The actual name of the uploader
-    -e, --email         The actual e-mail of the uploader (for sending email)
-    -t, --token         Token for accessing the admin API
-    --dry-run           Flag for running only the validation without modifying and moving metadata
-    --validation-only   Flag for running only the validation
-    --clean             Clean up the files that are created by the script (except the dataset_id.txt file)
+    -c, --cluster     Cluster name (prod or staging)
+    -u, --user        Username folder in the inbox bucket
+    -d, --dataset     Dataset folder (or path) name in the inbox bucket
+    --clean           Clean up the files that are created by the script (except the dataset_id.txt file)
 END_USAGE
     exit 1
 }
@@ -185,30 +125,8 @@ while (( "$#" )); do
             shift
             dataset="$1"
             ;;
-        -n|--name)
-            shift
-            NAME="$1"
-            while [[ -n "$2" && "$2" != -* ]]; do
-                NAME="$NAME $2"
-                shift
-            done
-            # Trim leading and trailing whitespace
-            NAME="${NAME#"${NAME%%[![:space:]]*}"}"
-            NAME="${NAME%"${NAME##*[![:space:]]}"}"
-            ;;
-        -e|--email)
-            shift
-            EMAIL="$1"
-            ;;
-        -t|--token)
-            shift
-            ACCESS_TOKEN="$1"
-            ;;
         --dry-run)
             DRY_RUN=true
-            ;;
-        --validation-only)
-            VALIDATION_ONLY=true
             ;;
         -h|--help)
             help
@@ -233,28 +151,6 @@ fi
 
 if [ -z "$dataset" ];then
     cecho red "ERROR: No dataset given"
-    help
-fi
-
-if [ "$DRY_RUN" == "false" ] && [ "$VALIDATION_ONLY" == "false" ]; then
-    if [ -z "$NAME" ];then
-        cecho red "ERROR: No user name given"
-        help
-    fi
-
-    if [ -z "$EMAIL" ];then
-        cecho red "ERROR: No user email given"
-        help
-    fi
-
-    if [ -z "$ACCESS_TOKEN" ];then
-        cecho red "ERROR: No access token given"
-        help
-    fi
-fi
-
-if [ "$DRY_RUN" == "true" ] && [ "$VALIDATION_ONLY" == "true" ]; then
-    cecho red "ERROR: cannot use both --dry-run and --validation-only flags"
     help
 fi
 
@@ -533,11 +429,19 @@ function decrypt_xml_files {
     cecho yellow "Decrypting xml files ..."
     export C4GH_PASSPHRASE
     vault kv get -field=private_key bp-secrets/crypt4gh > c4gh.sec.pem
+    C4GHGEN=$(crypt4gh generate 2>&1)
 
     for xml_file in xml-files/*.c4gh; do
-        if ! c4gh_decrypt c4gh.sec.pem "$xml_file"; then
-            cecho red "ERROR: Decryption failed for $xml_file"
-            ERROR_STATUS=1
+        if [[ $C4GHGEN != *"the required flag"* ]]; then
+            if ! crypt4gh decrypt --sk c4gh.sec.pem < "$xml_file" > xml-files/"$(basename -s .c4gh "$xml_file")"; then
+                cecho red "ERROR: Decryption failed"
+                ERROR_STATUS=1
+            fi
+        else
+            if ! crypt4gh decrypt -s c4gh.sec.pem -f "$xml_file"; then
+                cecho red "ERROR: Decryption failed"
+                ERROR_STATUS=1
+            fi
         fi
     done
     rm xml-files/*.c4gh
@@ -659,47 +563,24 @@ function validate_with_xsd_v2 {
 # Function for finding matches between two lists of files
 # - Gets the first argument and checks if the files exist in the second argument
 # - If a file is missing then it prints it and exits with an error
+# Returns lines in $1 not present in $2.
+# Both lists must contain unique entries; $2 should be pre-sorted for efficiency.
 function check_files {
-    awk '
-    NR==FNR {
-        # Fill a list with the files given as first argument
-        names[$0]
-        next
-    }
-    {
-        # Check each line in the files of the second argument for the presence of files from the first argument
-        for (name in names) {
-            if (index($0, name)) {
-                # If found, delete the name from the array
-                delete names[name]
-            }
-        }
-    }
-    END {
-        # After processing, check if there are any files from the first argument left in the array
-        for (name in names) {
-            # If a name never matched, output it to indicate a failure
-            print name
-            exit_code = 1    # Set a custom exit code for signaling a failure
-        }
-        exit exit_code
-    }
-    ' <(echo "$1") <(echo "$2")
+    comm -23 <(sort <<< "$1") <(sort <<< "$2")
 }
 
 # Function for checking that there are no empty files in IMAGES
 function check_file_sizes {
     cecho yellow "Checking file sizes ..."
-    files_lines=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ --recursive)
-    while IFS= read -r line; do
-        size=$(echo "$line" | awk '{print $3}')
-        bytesize=$($NUMFMT --from=si $size)
-        if [[ "$bytesize" -lt $MIN_FILE_SIZE ]]; then
-            path=$(echo $line | awk '{print $4}')
-            ERROR_STATUS=1
-            cecho red "Empty or incomplete file: $path (size: $size)"
-        fi
-    done <<< "$files_lines"
+    local bad_files
+    bad_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ --recursive | \
+        awk -v min="$MIN_FILE_SIZE" '$3+0 < min {print $4 " (size: " $3 ")"}')
+    if [[ -n "$bad_files" ]]; then
+        while IFS= read -r line; do
+            cecho red "Empty or incomplete file: $line"
+        done <<< "$bad_files"
+        ERROR_STATUS=1
+    fi
 }
 
 # Function for checking the metadata and inbox files.
@@ -713,6 +594,9 @@ function check_file_sizes {
 function comparing_files {
     cecho yellow "Checking files ..."
     all_inbox_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ --recursive | awk '{print $4}')
+    # Strip the S3 prefix and .c4gh suffix so paths match the relative paths stored in metadata (e.g. IMAGES/IMAGE_xxx/file.dcm)
+    # Pre-sort once so comm calls below don't need to re-sort the large list
+    all_inbox_relative=$(echo "$all_inbox_files" | sed "s|s3://${INBOX_BUCKET}/${user}/${dataset}/||" | sed 's/\.c4gh$//' | sort)
 
     count_inbox_files=$(echo "$all_inbox_files" | grep -c "IMAGES")
 
@@ -733,7 +617,7 @@ function comparing_files {
     elif [ "$count_inbox_files" -lt "$count_metadata_files" ]; then
         cecho red "ERROR: There are more files in metadata than the ones that exist in the inbox (inbox=$count_inbox_files, metadata=$count_metadata_files)" | tee -a general_errors.logs
         echo "The missing files in the inbox are:"
-        missing_inbox_files=$(check_files "$new_metadata_files" "$all_inbox_files")
+        missing_inbox_files=$(check_files "$new_metadata_files" "$all_inbox_relative")
         echo "$missing_inbox_files"
         ERROR_STATUS=1
     elif [ "$count_inbox_files" -gt "$count_metadata_files" ]; then
@@ -752,7 +636,7 @@ function comparing_files {
             ERROR_STATUS=1
         fi
     else
-        matching_files=$(check_files "$new_metadata_files" "$all_inbox_files")
+        matching_files=$(check_files "$new_metadata_files" "$all_inbox_relative")
         if [ -n "$matching_files" ]; then
             cecho red "ERROR: The following files were not found in inbox:" | tee -a general_errors.logs
             echo "$matching_files" | tee -a general_errors.logs
@@ -765,6 +649,7 @@ function comparing_files {
     # Check the thumbnails files
     if [[ "$LANDING_PAGE" == "true" ]]; then
         all_thumbnail_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/LANDING_PAGE/THUMBNAILS/ --recursive | awk '{print $4}')
+        all_thumbnail_relative=$(echo "$all_thumbnail_files" | sed "s|s3://${INBOX_BUCKET}/${user}/${dataset}/LANDING_PAGE/THUMBNAILS/||" | sed 's/\.c4gh$//' | sort)
         count_inbox_thumbnail_files=$(echo "$all_thumbnail_files" | wc -l)
         metadata_thumbnail_files=$(xmllint --xpath '/LANDING_PAGE_SET/LANDING_PAGE/SAMPLE_IMAGE_FILES/SAMPLE_IMAGE_FILE/@filename' xml-files/landing_page.xml | awk -F= '{print $2}' | sed 's/"//g')
         count_metadata_thumbnail_files=$(echo "$metadata_thumbnail_files" | wc -l)
@@ -774,13 +659,13 @@ function comparing_files {
         elif [ "$count_inbox_thumbnail_files" -lt "$count_metadata_thumbnail_files" ]; then
             cecho red "ERROR: There are more thumbnail files in metadata than the ones that exist in the inbox (inbox=$count_inbox_thumbnail_files, metadata=$count_metadata_thumbnail_files)" | tee -a general_errors.logs
             echo "The missing files in the inbox are:"
-            missing_inbox_files=$(check_files "$metadata_thumbnail_files" "$all_thumbnail_files")
+            missing_inbox_files=$(check_files "$metadata_thumbnail_files" "$all_thumbnail_relative")
             echo "$missing_inbox_files"
             ERROR_STATUS=1
         elif [ "$count_inbox_thumbnail_files" -gt "$count_metadata_thumbnail_files" ]; then
             cecho red "ERROR: There are more thumbnail files in the inbox than the ones that are referenced in metadata (inbox=$count_inbox_thumbnail_files, metadata=$count_metadata_thumbnail_files)" | tee -a general_errors.logs
             # Modify all_thumbnail_files to contain only the parts that are referenced in metadata
-            inbox_thumbnail_files=$(echo "$all_thumbnail_files" | sed "s/.*"$dataset"\///")
+            inbox_thumbnail_files=$(echo "$all_thumbnail_relative" | sed 's|LANDING_PAGE/THUMBNAILS/||')
             extra_inbox_files=$(check_files "$inbox_thumbnail_files" "$metadata_thumbnail_files")
             length_extra_files=$(echo "$extra_inbox_files" | wc -l)
             missing_files_diff=$((count_inbox_thumbnail_files - count_metadata_thumbnail_files))
@@ -793,7 +678,7 @@ function comparing_files {
                 ERROR_STATUS=1
             fi
         else
-            matching_files=$(check_files "$metadata_thumbnail_files" "$all_thumbnail_files")
+            matching_files=$(check_files "$metadata_thumbnail_files" "$all_thumbnail_relative")
             if [ -n "$matching_files" ]; then
                 cecho red "ERROR: The following thumbnail files were not found in inbox:" | tee -a general_errors.logs
                 echo "$matching_files" | tee -a general_errors.logs
@@ -873,15 +758,23 @@ function modify_dataset {
         cecho red "ERROR: dataset.xml file does not exist in xml-files folder"
         exit 1
     else
-        sed_i_bak -E "s/(<DATASET[^>]* alias=\"[^\"]*\")/\1 accession=\"$dataset_id\"/g" xml-files/dataset.xml
+        sed -i.bak -E "s/(<DATASET[^>]* alias=\"[^\"]*\")/\1 accession=\"$dataset_id\"/g" xml-files/dataset.xml
     fi
 
     curl https://raw.githubusercontent.com/NBISweden/EGA-SE-user-docs/main/crypt4gh_bp_key.pub -o bp_key.pub
 
     export C4GH_PASSPHRASE
-    if ! c4gh_encrypt c4gh.sec.pem bp_key.pub xml-files/dataset.xml; then
-        cecho red "ERROR: Encryption failed"
-        exit 1
+    C4GHGEN=$(crypt4gh generate 2>&1)
+    if [[ $C4GHGEN != *"the required flag"* ]]; then
+        if ! crypt4gh encrypt --sk c4gh.sec.pem --recipient_pk bp_key.pub < xml-files/dataset.xml > xml-files/dataset.xml.c4gh; then
+            cecho red "ERROR: Encryption failed"
+            exit 1
+        fi
+    else
+        if ! crypt4gh encrypt -s c4gh.sec.pem -p bp_key.pub -f xml-files/dataset.xml; then
+            cecho red "ERROR: Encryption failed"
+            exit 1
+        fi
     fi
 
     s3cmd_command del s3://"$INBOX_BUCKET"/"$user"/"$dataset"/METADATA/dataset.xml.c4gh
@@ -904,25 +797,14 @@ function organisation_name {
         exit 1
     fi
 
-    ORG_NAME=$(xmllint --xpath "//ORGANISATION_SET/ORGANISATION/NAME/text()" xml-files/organisation.xml)
-    if [ -z "$ORG_NAME" ]; then
+    local org_name=$(xmllint --xpath "//ORGANISATION_SET/ORGANISATION/NAME/text()" xml-files/organisation.xml)
+    if [ -z "$org_name" ]; then
         cecho red "There is no organisation name in xml"
     else
-        cecho green "Organisation name: $ORG_NAME"
+        cecho green "Organisation name: $org_name"
     fi
 
     cecho green "Done"
-}
-
-# Function for checking Kubernetes access
-function check_kubernetes_access {
-    if [[ "$cluster" == "prod" ]]; then
-        if ! kubectl -n sda-prod auth can-i create jobs >/dev/null 2>&1; then
-            cecho red "ERROR: You do not have access to the 'sda-prod' namespace"
-            cecho red "Please check if your KUBECONFIG is correctly set (or VPN)"
-            exit 1
-        fi
-    fi
 }
 
 vault token renew >/dev/null 2>&1
@@ -933,10 +815,6 @@ then
 fi
 
 if [[ "$1" != "--clean" ]]; then
-    if [[ "$DRY_RUN" == false ]] && [[ "$VALIDATION_ONLY" == false ]]; then
-        check_kubernetes_access
-    fi
-
     get_credentials
 
     sanitize_user_dataset
@@ -979,51 +857,8 @@ else
     exit $ERROR_STATUS
 fi
 
-cecho green "VALIDATION SUCCESSFUL !!!"
-cecho blue "Dataset stable ID: $dataset_id"
-
-if [[ "$VALIDATION_ONLY" == "true" ]]; then
-    cecho yellow "VALIDATION ONLY MODE"
-    exit 0
-fi
-
-if [[ "$cluster" == "staging" ]]; then
-    cecho magenta "Kubernetes job NOT deployed for staging cluster"
-    exit 0
-fi
-
-cat << EOF
-
-     --------------------
-    | Setting up k8s job |
-     --------------------
-
-EOF
-
-# Copy metadata in data folder
-cp -f xml-files/rems.xml ../data/xml/rems.txt || exit 1
-cp -f xml-files/policy.xml ../data/xml/policy.txt || exit 1
-cp -f xml-files/dataset.xml ../data/xml/dataset.txt || exit 1
-
-# Create the config file
-cp  -f ../config.yaml.example ../config.yaml
-
-# Update the config file
-sed_i "s|USER_ID:.*|USER_ID: \"${user//_/@}\"|" ../config.yaml
-sed_i "s|DATASET_ID:.*|DATASET_ID: \"$dataset_id\"|" ../config.yaml
-sed_i "s|DATASET_FOLDER:.*|DATASET_FOLDER: \"$dataset\"|" ../config.yaml
-sed_i "s|CLIENT_ACCESS_TOKEN:.*|CLIENT_ACCESS_TOKEN: \"$ACCESS_TOKEN\"|" ../config.yaml
-sed_i "s|MAIL_UPLOADER:.*|MAIL_UPLOADER: \"$EMAIL\"|" ../config.yaml
-sed_i "s|MAIL_UPLOADER_NAME:.*|MAIL_UPLOADER_NAME: \"$NAME\"|" ../config.yaml
-sed_i "s|MAIL_UPLOADER_ORGANIZATION_NAME:.*|MAIL_UPLOADER_ORGANIZATION_NAME: \"$ORG_NAME\"|" ../config.yaml
-
-pushd ..
-go build -o bpctl .
-./bpctl render -x
-kubectl kustomize . -o "$dataset".yaml
-kubectl -n sda-prod apply -f "$dataset".yaml
-popd
-
 trap - EXIT
 remove_private_key
+cecho green "VALIDATION SUCCESSFUL !!!"
+cecho blue "Dataset stable ID: $dataset_id"
 exit $ERROR_STATUS
