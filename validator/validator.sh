@@ -667,7 +667,7 @@ function check_file_sizes {
     cecho yellow "Checking file sizes ..."
     local bad_files
     bad_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ --recursive | \
-        awk -v min="$MIN_FILE_SIZE" '$3+0 < min {print $4 " (size: " $3 ")"}')
+        awk -v min="$MIN_FILE_SIZE" '$3+0 <= min {print $4 " (size: " $3 ")"}')
     if [[ -n "$bad_files" ]]; then
         while IFS= read -r line; do
             cecho red "Empty or incomplete file: $line"
