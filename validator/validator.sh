@@ -103,7 +103,7 @@ fi
 INBOX_ACCESS_KEY=""
 INBOX_SECRET_KEY=""
 HOST_BUCKET=""
-INBOX_BUCKET=""
+INBOX_BUCKETS=()
 METADATA_ACCESS_KEY=""
 METADATA_SECRET_KEY=""
 C4GH_PASSPHRASE=""
@@ -307,7 +307,7 @@ function get_credentials {
         HOST_BUCKET=$(vault kv get -field=endpoints bp-secrets/S3_keys/STO2 | cut -d, -f2)
         INBOX_ACCESS_KEY=$(vault kv get -field=access_key bp-secrets/S3_keys/STO2/inbox)
         INBOX_SECRET_KEY=$(vault kv get -field=secret_key bp-secrets/S3_keys/STO2/inbox)
-        INBOX_BUCKET=$(s3cmd_command ls | cut -d'/' -f3 | grep -v "staging" | grep '^inbox-' | sort -r | head -n1)
+        INBOX_BUCKETS=("inbox" "inbox-2024-01")
         METADATA_ACCESS_KEY=$(vault kv get -field=access_key bp-secrets/S3_keys/STO2/private)
         METADATA_SECRET_KEY=$(vault kv get -field=secret_key bp-secrets/S3_keys/STO2/private)
         METADATA_BUCKET=$(s3cmd_metadata ls | cut -d'/' -f3)
@@ -315,7 +315,7 @@ function get_credentials {
         INBOX_ACCESS_KEY=$(vault kv get -field=access_key bp-secrets/S3_keys/STO2/inbox)
         INBOX_SECRET_KEY=$(vault kv get -field=secret_key bp-secrets/S3_keys/STO2/inbox)
         HOST_BUCKET=$(vault kv get -field=endpoints bp-secrets/S3_keys/STO2 | cut -d, -f2)
-        INBOX_BUCKET="staging-inbox"
+        INBOX_BUCKETS=("staging-inbox")
         METADATA_BUCKET="bigpicture-test-metadata"
     else
         cecho red "ERROR: Cluster name is not valid"
@@ -364,10 +364,14 @@ function validate_private_files {
 function validate_files {
     cecho yellow "Validating METADATA folder files ..."
     expected_metadata_content=("dataset" "policy" "image" "annotation" "observation" "sample" "staining")
-    inbox_metadata_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/METADATA/ | awk -F'_lifescience-ri.eu/|_elixir-europe.org/' '{print $2}' | cut -d'/' -f3 | tr '\n' ' ')
+    inbox_metadata_files=$(for bucket in "${INBOX_BUCKETS[@]}"; do
+        s3cmd_command ls "s3://${bucket}/${user}/${dataset}/METADATA/" 2>/dev/null
+    done | awk -F'_lifescience-ri.eu/|_elixir-europe.org/' '{print $2}' | cut -d'/' -f3 | sort -u | tr '\n' ' ')
     # Convert multiple lines to array
     read -a metadata_files <<<"$inbox_metadata_files"
-    inbox_private_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/PRIVATE/ | awk -F'_lifescience-ri.eu/|_elixir-europe.org/' '{print $2}' | cut -d'/' -f3 | tr '\n' ' ')
+    inbox_private_files=$(for bucket in "${INBOX_BUCKETS[@]}"; do
+        s3cmd_command ls "s3://${bucket}/${user}/${dataset}/PRIVATE/" 2>/dev/null
+    done | awk -F'_lifescience-ri.eu/|_elixir-europe.org/' '{print $2}' | cut -d'/' -f3 | sort -u | tr '\n' ' ')
     # Convert multiple lines to array
     read -a metadata_private_files <<<"$inbox_private_files"
     # if the folder ANNOTATIONS is missing, make sure annotation.xml and observer.xml are not present
@@ -416,7 +420,9 @@ function validate_structure {
     cecho yellow "Validating folder structure ..."
     annotations=true
     main_folder="$dataset"
-    inbox_subfolders=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ | awk -F'_lifescience-ri.eu/|_elixir-europe.org/' '{print $2}' | cut -d'/' -f2)
+    inbox_subfolders=$(for bucket in "${INBOX_BUCKETS[@]}"; do
+        s3cmd_command ls "s3://${bucket}/${user}/${dataset}/" 2>/dev/null
+    done | awk -F'_lifescience-ri.eu/|_elixir-europe.org/' '{print $2}' | cut -d'/' -f2 | sort -u)
     # Convert multiple lines to array
     IFS=$'\n' read -r -d '' -a subfolders <<<"$inbox_subfolders"$'\n'
     expected_subfolders=("METADATA" "IMAGES" "ANNOTATIONS" "PRIVATE" "LANDING_PAGE")
@@ -446,7 +452,9 @@ function validate_structure {
             expected_subfolders=("${expected_subfolders[@]}")
         fi
     else
-        thumbnail_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/LANDING_PAGE/THUMBNAILS/ --recursive | wc -l)
+        thumbnail_files=$(for bucket in "${INBOX_BUCKETS[@]}"; do
+            s3cmd_command ls "s3://${bucket}/${user}/${dataset}/LANDING_PAGE/THUMBNAILS/" --recursive 2>/dev/null
+        done | awk '{print $4}' | sort -u | wc -l)
         if [[ "$thumbnail_files" -eq 0 ]]; then
             cecho red "ERROR: THUMBNAILS folder is missing or empty" | tee -a general_errors.logs
             ERROR_STATUS=1
@@ -456,7 +464,9 @@ function validate_structure {
 
     # Check if landing page folder is empty in case it exists
     if [[ "$LANDING_PAGE" == "true" ]]; then
-        landing_page_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/LANDING_PAGE/ --recursive | wc -l)
+        landing_page_files=$(for bucket in "${INBOX_BUCKETS[@]}"; do
+            s3cmd_command ls "s3://${bucket}/${user}/${dataset}/LANDING_PAGE/" --recursive 2>/dev/null
+        done | awk '{print $4}' | sort -u | wc -l)
         if [[ "$landing_page_files" -eq 0 ]]; then
             cecho red "ERROR: LANDING_PAGE folder is empty" | tee -a general_errors.logs
             ERROR_STATUS=1
@@ -502,13 +512,21 @@ function validate_structure {
 function get_xml_files {
     mkdir -p xml-files
     cecho yellow "Getting xml files ..."
-    metadata_path=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ | grep -i METADATA | awk '{print $2}')
-    private_path=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ | grep -i PRIVATE | awk '{print $2}')
-    s3cmd_command get "$metadata_path" --recursive  xml-files/ >/dev/null 2>&1
-    s3cmd_command get "$private_path" --recursive  xml-files/ >/dev/null 2>&1
+    for bucket in "${INBOX_BUCKETS[@]}"; do
+        metadata_path=$(s3cmd_command ls "s3://${bucket}/${user}/${dataset}/" 2>/dev/null | grep -i METADATA | awk '{print $2}')
+        private_path=$(s3cmd_command ls "s3://${bucket}/${user}/${dataset}/" 2>/dev/null | grep -i PRIVATE | awk '{print $2}')
+        if [[ -n "$metadata_path" ]]; then
+            s3cmd_command get "$metadata_path" --recursive xml-files/ >/dev/null 2>&1
+        fi
+        if [[ -n "$private_path" ]]; then
+            s3cmd_command get "$private_path" --recursive xml-files/ >/dev/null 2>&1
+        fi
+    done
     if [[ "$LANDING_PAGE" == "true" ]]; then
-        landing_page_path=s3://"$INBOX_BUCKET"/"$user"/"$dataset"/LANDING_PAGE/landing_page.xml
-        s3cmd_command get "$landing_page_path" --recursive  xml-files/ >/dev/null 2>&1
+        for bucket in "${INBOX_BUCKETS[@]}"; do
+            landing_page_path="s3://${bucket}/${user}/${dataset}/LANDING_PAGE/landing_page.xml"
+            s3cmd_command get "$landing_page_path" --recursive xml-files/ >/dev/null 2>&1
+        done
         # Throw error if the landing_page.xml file does not exist
         if [[ ! -f xml-files/landing_page.xml.c4gh ]]; then
             cecho red "ERROR: landing_page.xml is missing" | tee -a general_errors.logs
@@ -666,7 +684,9 @@ function check_files {
 function check_file_sizes {
     cecho yellow "Checking file sizes ..."
     local bad_files
-    bad_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ --recursive | \
+    bad_files=$(for bucket in "${INBOX_BUCKETS[@]}"; do
+        s3cmd_command ls "s3://${bucket}/${user}/${dataset}/" --recursive 2>/dev/null
+    done | sort -u | \
         awk -v min="$MIN_FILE_SIZE" '$3+0 <= min {print $4 " (size: " $3 ")"}')
     if [[ -n "$bad_files" ]]; then
         while IFS= read -r line; do
@@ -686,12 +706,14 @@ function check_file_sizes {
 # - If they are not equal, it prints the extra or missing files and exits
 function comparing_files {
     cecho yellow "Checking files ..."
-    all_inbox_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ --recursive | awk '{print $4}')
+    all_inbox_files=$(for bucket in "${INBOX_BUCKETS[@]}"; do
+        s3cmd_command ls "s3://${bucket}/${user}/${dataset}/" --recursive 2>/dev/null
+    done | awk '{print $4}' | sort -u)
     # Strip the S3 prefix and .c4gh suffix so paths match the relative paths stored in metadata (e.g. IMAGES/IMAGE_xxx/file.dcm)
     # Pre-sort once so comm calls below don't need to re-sort the large list
-    all_inbox_relative=$(echo "$all_inbox_files" | sed "s|s3://${INBOX_BUCKET}/${user}/${dataset}/||" | sed 's/\.c4gh$//' | sort)
+    all_inbox_relative=$(echo "$all_inbox_files" | sed -E "s|s3://[^/]+/${user}/${dataset}/||" | sed 's/\.c4gh$//' | sort -u)
 
-    count_inbox_files=$(echo "$all_inbox_files" | grep -c "IMAGES")
+    count_inbox_files=$(echo "$all_inbox_relative" | grep -c '^IMAGES/')
 
     for file in xml-files/*.xml; do
         if [[ "$file" == *"image"* ]]; then
@@ -716,13 +738,13 @@ function comparing_files {
     elif [ "$count_inbox_files" -gt "$count_metadata_files" ]; then
         cecho red "ERROR: There are more files in the inbox than the ones that are referenced in metadata (inbox=$count_inbox_files, metadata=$count_metadata_files)" | tee -a general_errors.logs
         # Modify all_inbox_files to contain only the parts that are referenced in metadata
-        inbox_images_files=$(echo "$all_inbox_files" | grep "/IMAGES/" | sed -E 's|.*(IMAGES/IMAGE_[^/]+/[^.]+(\.[^.]+)*\.dcm).*|\1|')
+        inbox_images_files=$(echo "$all_inbox_relative" | grep '^IMAGES/IMAGE_')
         extra_inbox_relative=$(check_files "$inbox_images_files" "$new_metadata_files")
         extra_inbox_files=$(awk -F'\t' 'NR==FNR { if (NF) wanted[$1]=1; next } wanted[$2] { print $1 }' \
             <(printf '%s\n' "$extra_inbox_relative") \
             <(paste \
                 <(echo "$all_inbox_files" | grep "/IMAGES/") \
-                <(echo "$all_inbox_files" | grep "/IMAGES/" | sed -E 's|.*(IMAGES/IMAGE_[^/]+/[^.]+(\.[^.]+)*\.dcm).*|\1|')))
+            <(echo "$all_inbox_files" | sed -E "s|s3://[^/]+/${user}/${dataset}/||" | sed 's/\.c4gh$//')))
         length_extra_files=$(echo "$extra_inbox_relative" | sed '/^$/d' | wc -l)
         missing_files_diff=$((count_inbox_files - count_metadata_files))
         if [ "$length_extra_files" -eq "$missing_files_diff" ]; then
@@ -746,9 +768,11 @@ function comparing_files {
 
     # Check the thumbnails files
     if [[ "$LANDING_PAGE" == "true" ]]; then
-        all_thumbnail_files=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/LANDING_PAGE/THUMBNAILS/ --recursive | awk '{print $4}')
-        all_thumbnail_relative=$(echo "$all_thumbnail_files" | sed "s|s3://${INBOX_BUCKET}/${user}/${dataset}/LANDING_PAGE/THUMBNAILS/||" | sed 's/\.c4gh$//' | sort)
-        count_inbox_thumbnail_files=$(echo "$all_thumbnail_files" | wc -l)
+        all_thumbnail_files=$(for bucket in "${INBOX_BUCKETS[@]}"; do
+            s3cmd_command ls "s3://${bucket}/${user}/${dataset}/LANDING_PAGE/THUMBNAILS/" --recursive 2>/dev/null
+        done | awk '{print $4}' | sort -u)
+        all_thumbnail_relative=$(echo "$all_thumbnail_files" | sed -E "s|s3://[^/]+/${user}/${dataset}/LANDING_PAGE/THUMBNAILS/||" | sed 's/\.c4gh$//' | sort -u)
+        count_inbox_thumbnail_files=$(echo "$all_thumbnail_relative" | sed '/^$/d' | wc -l)
         metadata_thumbnail_files=$(xmllint --xpath '/LANDING_PAGE_SET/LANDING_PAGE/SAMPLE_IMAGE_FILES/SAMPLE_IMAGE_FILE/@filename' xml-files/landing_page.xml | awk -F= '{print $2}' | sed 's/"//g')
         count_metadata_thumbnail_files=$(echo "$metadata_thumbnail_files" | wc -l)
         if [[ "metadata_thumbnail_files" == "" ]]; then
@@ -757,7 +781,7 @@ function comparing_files {
         elif [ "$count_inbox_thumbnail_files" -lt "$count_metadata_thumbnail_files" ]; then
             cecho red "ERROR: There are more thumbnail files in metadata than the ones that exist in the inbox (inbox=$count_inbox_thumbnail_files, metadata=$count_metadata_thumbnail_files)" | tee -a general_errors.logs
             echo "The missing files in the inbox are:"
-            missing_inbox_files=$(check_files "$metadata_thumbnail_files" "$all_thumbnail_files")
+            missing_inbox_files=$(check_files "$metadata_thumbnail_files" "$all_thumbnail_relative")
             echo "$missing_inbox_files"
             ERROR_STATUS=1
         elif [ "$count_inbox_thumbnail_files" -gt "$count_metadata_thumbnail_files" ]; then
@@ -817,13 +841,18 @@ function move_private_metadata {
     cecho yellow "Moving metadata ..."
 
     stable_id=$(cat dataset_id.txt)
-    metadata_inbox_path=$(s3cmd_command ls s3://"$INBOX_BUCKET"/"$user"/"$dataset"/ | grep "PRIVATE" | awk '{print $2}')
+    metadata_inbox_paths=$(for bucket in "${INBOX_BUCKETS[@]}"; do
+        s3cmd_command ls "s3://${bucket}/${user}/${dataset}/" 2>/dev/null | grep "PRIVATE" | awk '{print $2}'
+    done)
     metadata_bucket_path="s3://"$METADATA_BUCKET"/"$user"/"$stable_id"/"$dataset"/"PRIVATE"/"
 
     cecho yellow "Moving PRIVATE folder in metadata bucket"
        
     if [[ "$cluster" == "staging" ]]; then
-        s3cmd_command mv "$metadata_inbox_path" "$metadata_bucket_path" --recursive
+        while IFS= read -r metadata_inbox_path; do
+            [[ -z "$metadata_inbox_path" ]] && continue
+            s3cmd_command mv "$metadata_inbox_path" "$metadata_bucket_path" --recursive
+        done <<< "$metadata_inbox_paths"
         metadata_size=$(s3cmd_command ls "$metadata_bucket_path" --recursive | awk '{print $3}')
         if [ -z "$metadata_size" ]; then
             cecho red "ERROR: Moving metadata failed"
@@ -831,14 +860,20 @@ function move_private_metadata {
         fi
     else
         mkdir -p "PRIVATE"
-        s3cmd_command get "$metadata_inbox_path" --recursive "PRIVATE"/ >/dev/null 2>&1
+        while IFS= read -r metadata_inbox_path; do
+            [[ -z "$metadata_inbox_path" ]] && continue
+            s3cmd_command get "$metadata_inbox_path" --recursive "PRIVATE"/ >/dev/null 2>&1
+        done <<< "$metadata_inbox_paths"
         s3cmd_metadata put "PRIVATE"/ "$metadata_bucket_path" --recursive
         metadata_size=$(s3cmd_metadata ls "$metadata_bucket_path" --recursive | awk '{print $3}')
         if [ -z "$metadata_size" ]; then
             cecho red "ERROR: Moving metadata failed"
             exit 1
         fi
-        s3cmd_command del "$metadata_inbox_path" --recursive
+        while IFS= read -r metadata_inbox_path; do
+            [[ -z "$metadata_inbox_path" ]] && continue
+            s3cmd_command del "$metadata_inbox_path" --recursive
+        done <<< "$metadata_inbox_paths"
     fi
 
     cecho green "Done"
@@ -872,9 +907,10 @@ function modify_dataset {
         exit 1
     fi
 
-    s3cmd_command del s3://"$INBOX_BUCKET"/"$user"/"$dataset"/METADATA/dataset.xml.c4gh
-
-    s3cmd_command put xml-files/dataset.xml.c4gh s3://"$INBOX_BUCKET"/"$user"/"$dataset"/METADATA/dataset.xml.c4gh
+    for bucket in "${INBOX_BUCKETS[@]}"; do
+        s3cmd_command del "s3://${bucket}/${user}/${dataset}/METADATA/dataset.xml.c4gh"
+        s3cmd_command put xml-files/dataset.xml.c4gh "s3://${bucket}/${user}/${dataset}/METADATA/dataset.xml.c4gh"
+    done
 
     cecho green "Done"
 }
