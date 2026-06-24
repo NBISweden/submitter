@@ -56,7 +56,7 @@ var datasetCmd = &cobra.Command{
 			}
 		}
 
-		fileIDsList, err := api.GetFilesWithStatus("verified")
+		fileIDsList, err := api.GetFilesWithStatus("ready")
 		if err != nil {
 			return err
 		}
