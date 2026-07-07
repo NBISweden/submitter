@@ -771,7 +771,7 @@ function comparing_files {
         all_thumbnail_files=$(for bucket in "${INBOX_BUCKETS[@]}"; do
             s3cmd_command ls "s3://${bucket}/${user}/${dataset}/LANDING_PAGE/THUMBNAILS/" --recursive 2>/dev/null
         done | awk '{print $4}' | sort -u)
-        all_thumbnail_relative=$(echo "$all_thumbnail_files" | sed -E "s|s3://[^/]+/${user}/${dataset}/LANDING_PAGE/THUMBNAILS/||" | sed 's/\.c4gh$//' | sort -u)
+        all_thumbnail_relative=$(echo "$all_thumbnail_files" | sed -E "s|s3://[^/]+/${user}/${dataset}/||" | sed 's/\.c4gh$//' | sort -u)
         count_inbox_thumbnail_files=$(echo "$all_thumbnail_relative" | sed '/^$/d' | wc -l)
         metadata_thumbnail_files=$(xmllint --xpath '/LANDING_PAGE_SET/LANDING_PAGE/SAMPLE_IMAGE_FILES/SAMPLE_IMAGE_FILE/@filename' xml-files/landing_page.xml | awk -F= '{print $2}' | sed 's/"//g')
         count_metadata_thumbnail_files=$(echo "$metadata_thumbnail_files" | wc -l)
