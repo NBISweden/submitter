@@ -123,14 +123,7 @@ func (mail *Mail) Notify(notifier string, dryRun bool) error {
 		return fmt.Errorf("failed to render mail template: %v", err)
 	}
 
-	if dryRun {
-		slog.Info(fmt.Sprintf("[mail] dry-run enabled, using <%s> instead of <%s>", mail.email, mail.lookup[notifier].email))
-		err = mail.send(mail.lookup[notifier].subject, htmlBody, mail.email, mail.lookup[notifier].attachments, nil)
-	}
-
-	if !dryRun {
-		err = mail.send(mail.lookup[notifier].subject, htmlBody, mail.lookup[notifier].email, mail.lookup[notifier].attachments, mail.lookup[notifier].cc)
-	}
+	err = mail.send(mail.lookup[notifier].subject, htmlBody, mail.lookup[notifier].email, mail.lookup[notifier].attachments, mail.lookup[notifier].cc)
 	if err != nil {
 		return fmt.Errorf("failed to send mail notification %v", err)
 	}
@@ -190,7 +183,12 @@ func (mail *Mail) send(subject, message, receiver string, attachments, ccs []str
 	if err != nil {
 		return err
 	}
-	slog.Info("[mail] notification sent about dataset completion", "receiver", receiver)
+	slog.Info("sending mail", "receiver", receiver)
+	if dryRun {
+		slog.Info("dry run enabled, no mail sent")
+		return nil
+	}
+
 	return client.DialAndSend(m)
 }
 
